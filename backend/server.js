@@ -18,6 +18,9 @@ app.get('/', (req, res) => {
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 
+const adminRoutes = require('./routes/admin');
+app.use('/api/admin', adminRoutes);
+
 const propertyRoutes = require('./routes/property');
 app.use('/api/properties', propertyRoutes);
 
