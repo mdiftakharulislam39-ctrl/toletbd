@@ -18,6 +18,9 @@ app.get('/', (req, res) => {
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 
+const propertyRoutes = require('./routes/property');
+app.use('/api/properties', propertyRoutes);
+
 // MongoDB connect
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected!'))
