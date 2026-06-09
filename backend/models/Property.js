@@ -22,10 +22,10 @@ const propertySchema = new mongoose.Schema({
   images: [{ type: String }],
   owner_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   status: { 
-    type: String, 
-    enum: ['pending', 'approved', 'rejected'], 
-    default: 'pending' 
-  }
+  type: String, 
+  enum: ['pending', 'approved', 'rejected', 'rented'], 
+  default: 'pending' 
+},
 }, { timestamps: true });
 
 module.exports = mongoose.model('Property', propertySchema);
