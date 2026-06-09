@@ -41,8 +41,15 @@ router.post('/add', auth, upload.array('images', 5), async (req, res) => {
         imageUrls.push(url);
       }
     }
+    const facilities = req.body['facilities[]']
+      ? Array.isArray(req.body['facilities[]'])
+        ? req.body['facilities[]']
+        : [req.body['facilities[]']]
+      : [];
+
     const property = new Property({
       ...req.body,
+      facilities,
       images: imageUrls,
       owner_id: req.user.userId
     });
@@ -68,9 +75,15 @@ router.put('/edit/:id', auth, upload.array('images', 5), async (req, res) => {
         imageUrls.push(url);
       }
     }
+    const facilities = req.body['facilities[]']
+      ? Array.isArray(req.body['facilities[]'])
+        ? req.body['facilities[]']
+        : [req.body['facilities[]']]
+      : [];
+
     const updated = await Property.findByIdAndUpdate(
       req.params.id,
-      { ...req.body, images: imageUrls, status: 'pending' },
+      { ...req.body, facilities, images: imageUrls, status: 'pending' },
       { new: true }
     );
     res.json({ message: 'Property update হয়েছে!', property: updated });
@@ -93,7 +106,6 @@ router.delete('/delete/:id', auth, async (req, res) => {
   }
 });
 
-// ভাড়া হয়ে গেছে mark করুন
 router.put('/rented/:id', auth, async (req, res) => {
   try {
     const property = await Property.findById(req.params.id);
@@ -112,7 +124,6 @@ router.put('/rented/:id', auth, async (req, res) => {
   }
 });
 
-// আমার properties
 router.get('/my', auth, async (req, res) => {
   try {
     const properties = await Property.find({ owner_id: req.user.userId });

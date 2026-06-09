@@ -20,12 +20,16 @@ const propertySchema = new mongoose.Schema({
     default: 'any' 
   },
   images: [{ type: String }],
+  facilities: [{
+    type: String,
+    enum: ['AC', 'Lift', 'Parking', 'Gas', 'WiFi', 'CCTV', 'Generator', 'Water']
+  }],
   owner_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   status: { 
-  type: String, 
-  enum: ['pending', 'approved', 'rejected', 'rented'], 
-  default: 'pending' 
-},
+    type: String, 
+    enum: ['pending', 'approved', 'rejected', 'rented'], 
+    default: 'pending' 
+  },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Property', propertySchema);
