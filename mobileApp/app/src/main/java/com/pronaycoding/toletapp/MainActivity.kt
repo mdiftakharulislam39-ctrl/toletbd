@@ -11,16 +11,25 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
+import androidx.compose.ui.unit.dp
+import com.google.firebase.auth.FirebaseAuth
+import com.pronaycoding.toletapp.auth.GoogleAuthManager
+import com.pronaycoding.toletapp.ui.auth.SignInScreen
+import com.pronaycoding.toletapp.ui.profile.ProfileScreen
 import com.pronaycoding.toletapp.ui.theme.ToletAppTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,7 +46,45 @@ class MainActivity : ComponentActivity() {
 @PreviewScreenSizes
 @Composable
 fun ToletAppApp() {
+    val context = LocalContext.current
+    val authManager = remember { GoogleAuthManager(context) }
+    val coroutineScope = rememberCoroutineScope()
+
+    var currentUser by remember { mutableStateOf(FirebaseAuth.getInstance().currentUser) }
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
+    var isSigningIn by rememberSaveable { mutableStateOf(false) }
+    var signInError by rememberSaveable { mutableStateOf<String?>(null) }
+
+    DisposableEffect(Unit) {
+        val listener = FirebaseAuth.AuthStateListener { auth ->
+            currentUser = auth.currentUser
+        }
+        FirebaseAuth.getInstance().addAuthStateListener(listener)
+        onDispose {
+            FirebaseAuth.getInstance().removeAuthStateListener(listener)
+        }
+    }
+
+    val user = currentUser
+    if (user == null) {
+        SignInScreen(
+            isLoading = isSigningIn,
+            errorMessage = signInError,
+            onSignInClick = {
+                coroutineScope.launch {
+                    isSigningIn = true
+                    signInError = null
+                    authManager.signInWithGoogle()
+                        .onSuccess { signInError = null }
+                        .onFailure { error ->
+                            signInError = error.message ?: "Sign in failed."
+                        }
+                    isSigningIn = false
+                }
+            },
+        )
+        return
+    }
 
     NavigationSuiteScaffold(
         navigationSuiteItems = {
@@ -46,21 +93,34 @@ fun ToletAppApp() {
                     icon = {
                         Icon(
                             painterResource(it.icon),
-                            contentDescription = it.label
+                            contentDescription = it.label,
                         )
                     },
                     label = { Text(it.label) },
                     selected = it == currentDestination,
-                    onClick = { currentDestination = it }
+                    onClick = { currentDestination = it },
                 )
             }
-        }
+        },
     ) {
         Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-            Greeting(
-                name = "Android",
-                modifier = Modifier.padding(innerPadding)
-            )
+            when (currentDestination) {
+                AppDestinations.HOME -> Greeting(
+                    name = user.displayName ?: "there",
+                    modifier = Modifier.padding(innerPadding),
+                )
+
+                AppDestinations.FAVORITES -> Greeting(
+                    name = "Favorites",
+                    modifier = Modifier.padding(innerPadding),
+                )
+
+                AppDestinations.PROFILE -> ProfileScreen(
+                    user = user,
+                    onSignOutClick = { authManager.signOut() },
+                    modifier = Modifier.padding(innerPadding),
+                )
+            }
         }
     }
 }
@@ -78,7 +138,7 @@ enum class AppDestinations(
 fun Greeting(name: String, modifier: Modifier = Modifier) {
     Text(
         text = "Hello $name!",
-        modifier = modifier
+        modifier = modifier.padding(24.dp),
     )
 }
 

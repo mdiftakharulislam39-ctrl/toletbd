@@ -12,7 +12,20 @@
           "package_name": "com.pronaycoding.toletapp"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1095465104015-mdr4mc19eqjfndqsirv0lqb0brgmmuhl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.pronaycoding.toletapp",
+            "certificate_hash": "b969181ece2bc82fd6fbada72a84d327453b41ac"
+          }
+        },
+        {
+          "client_id": "1095465104015-1imavpmkip3c8nppnur2l5kkfi4bb10u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBf48bDXnU3K1ytg2Jk6nZwEbE3LvdnT1g"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1095465104015-1imavpmkip3c8nppnur2l5kkfi4bb10u.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
