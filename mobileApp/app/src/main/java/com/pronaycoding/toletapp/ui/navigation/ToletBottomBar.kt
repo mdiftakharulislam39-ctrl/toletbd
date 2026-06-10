@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
@@ -53,7 +54,7 @@ fun ToletBottomBar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -78,14 +79,14 @@ fun ToletBottomBar(
                 onClick = { onDestinationChange(AppDestinations.POST) },
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .offset(y = (-18).dp),
+                    .offset(y = (-14).dp),
             )
         }
     }
 }
 
 @Composable
-private fun BottomBarFabSpacer() {
+private fun RowScope.BottomBarFabSpacer() {
     Box(modifier = Modifier.weight(1f))
 }
 
@@ -97,7 +98,7 @@ private fun BottomBarFab(
 ) {
     FloatingActionButton(
         onClick = onClick,
-        modifier = modifier.size(58.dp),
+        modifier = modifier.size(48.dp),
         shape = CircleShape,
         containerColor = if (selected) {
             MaterialTheme.colorScheme.primaryContainer
@@ -117,13 +118,13 @@ private fun BottomBarFab(
         Icon(
             imageVector = Icons.Filled.Add,
             contentDescription = AppDestinations.POST.label,
-            modifier = Modifier.size(28.dp),
+            modifier = Modifier.size(22.dp),
         )
     }
 }
 
 @Composable
-private fun BottomBarItem(
+private fun RowScope.BottomBarItem(
     label: String,
     selected: Boolean,
     selectedIcon: ImageVector,
@@ -154,22 +155,22 @@ private fun BottomBarItem(
                 },
                 shape = RoundedCornerShape(16.dp),
             )
-            .padding(vertical = 8.dp, horizontal = 4.dp),
+            .padding(vertical = 6.dp, horizontal = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Icon(
             imageVector = if (selected) selectedIcon else unselectedIcon,
             contentDescription = label,
             tint = contentColor,
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.size(20.dp),
         )
         Text(
             text = label,
             color = contentColor,
             style = MaterialTheme.typography.labelSmall.copy(
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-                fontSize = 11.sp,
+                fontSize = 10.sp,
             ),
         )
     }

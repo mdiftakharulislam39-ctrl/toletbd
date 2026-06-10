@@ -8,10 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -24,7 +21,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -34,9 +30,12 @@ import com.pronaycoding.toletapp.data.model.UserProfile
 import com.pronaycoding.toletapp.data.UserRepository
 import com.pronaycoding.toletapp.ui.add.AddToletScreen
 import com.pronaycoding.toletapp.ui.auth.SignInScreen
+import com.pronaycoding.toletapp.ui.chat.ChatListScreen
 import com.pronaycoding.toletapp.ui.chat.ChatScreen
 import com.pronaycoding.toletapp.ui.detail.ToletDetailScreen
 import com.pronaycoding.toletapp.ui.home.HomeScreen
+import com.pronaycoding.toletapp.ui.navigation.AppDestinations
+import com.pronaycoding.toletapp.ui.navigation.ToletBottomBar
 import com.pronaycoding.toletapp.ui.phone.PhoneNumberScreen
 import com.pronaycoding.toletapp.ui.profile.ProfileScreen
 import com.pronaycoding.toletapp.ui.saved.SavedScreen
@@ -152,6 +151,7 @@ fun ToletAppApp() {
                 currentDestination = currentDestination,
                 onDestinationChange = { currentDestination = it },
                 onListingClick = { selectedListing = it },
+                onChatClick = { chatWithUser = it },
                 onSignOut = { authManager.signOut() },
             )
         }
@@ -164,60 +164,47 @@ private fun MainNavigation(
     currentDestination: AppDestinations,
     onDestinationChange: (AppDestinations) -> Unit,
     onListingClick: (ToletListing) -> Unit,
+    onChatClick: (UserProfile) -> Unit,
     onSignOut: () -> Unit,
 ) {
-    NavigationSuiteScaffold(
-        navigationSuiteItems = {
-            AppDestinations.entries.forEach {
-                item(
-                    icon = {
-                        Icon(
-                            painterResource(it.icon),
-                            contentDescription = it.label,
-                        )
-                    },
-                    label = { Text(it.label) },
-                    selected = it == currentDestination,
-                    onClick = { onDestinationChange(it) },
-                )
-            }
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        bottomBar = {
+            ToletBottomBar(
+                currentDestination = currentDestination,
+                onDestinationChange = onDestinationChange,
+            )
         },
-    ) {
-        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-            when (currentDestination) {
-                AppDestinations.HOME -> HomeScreen(
-                    onListingClick = onListingClick,
-                    modifier = Modifier.padding(innerPadding),
-                )
+    ) { innerPadding ->
+        when (currentDestination) {
+            AppDestinations.HOME -> HomeScreen(
+                onListingClick = onListingClick,
+                modifier = Modifier.padding(innerPadding),
+            )
 
-                AppDestinations.POST -> AddToletScreen(
-                    user = user,
-                    modifier = Modifier.padding(innerPadding),
-                    onListingPosted = { onDestinationChange(AppDestinations.HOME) },
-                )
+            AppDestinations.POST -> AddToletScreen(
+                user = user,
+                modifier = Modifier.padding(innerPadding),
+                onListingPosted = { onDestinationChange(AppDestinations.HOME) },
+            )
 
-                AppDestinations.SAVED -> SavedScreen(
-                    user = user,
-                    onListingClick = onListingClick,
-                    modifier = Modifier.padding(innerPadding),
-                )
+            AppDestinations.SAVED -> SavedScreen(
+                user = user,
+                onListingClick = onListingClick,
+                modifier = Modifier.padding(innerPadding),
+            )
 
-                AppDestinations.PROFILE -> ProfileScreen(
-                    user = user,
-                    onSignOutClick = onSignOut,
-                    modifier = Modifier.padding(innerPadding),
-                )
-            }
+            AppDestinations.CHAT -> ChatListScreen(
+                user = user,
+                onChatClick = onChatClick,
+                modifier = Modifier.padding(innerPadding),
+            )
+
+            AppDestinations.PROFILE -> ProfileScreen(
+                user = user,
+                onSignOutClick = onSignOut,
+                modifier = Modifier.padding(innerPadding),
+            )
         }
     }
-}
-
-enum class AppDestinations(
-    val label: String,
-    val icon: Int,
-) {
-    HOME("Search", R.drawable.ic_home),
-    POST("Post", R.drawable.ic_add),
-    SAVED("Saved", R.drawable.ic_favorite),
-    PROFILE("Profile", R.drawable.ic_account_box),
 }

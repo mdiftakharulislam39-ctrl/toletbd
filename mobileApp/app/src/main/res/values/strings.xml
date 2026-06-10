@@ -31,4 +31,10 @@
     <string name="save_listing">Save listing</string>
     <string name="saved_title">Saved To-Lets</string>
     <string name="no_saved_listings">You have not saved any to-lets yet.</string>
+    <string name="chat_title">Messages</string>
+    <string name="no_conversations">No conversations yet. Tap + to start chatting with someone.</string>
+    <string name="no_messages_yet">No messages yet</string>
+    <string name="new_chat">New chat</string>
+    <string name="new_chat_phone_hint">Phone number</string>
+    <string name="start_chat">Start chat</string>
 </resources>

@@ -2,6 +2,7 @@ package com.pronaycoding.toletapp.data
 
 import com.google.firebase.FirebaseApp
 import com.google.firebase.database.FirebaseDatabase
+import com.pronaycoding.toletapp.data.model.ChatConversation
 import com.pronaycoding.toletapp.data.model.ChatMessage
 import kotlinx.coroutines.tasks.await
 
@@ -49,6 +50,31 @@ class ChatRepository(
             )
             messageRef.setValue(message.toMap()).await()
             Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getConversations(currentUserId: String): Result<List<ChatConversation>> {
+        return try {
+            val snapshot = database.getReference("chats").get().await()
+            val conversations = snapshot.children.mapNotNull { chatChild ->
+                val participantIds = chatChild.child("participants").children.mapNotNull { it.key }
+                if (!participantIds.contains(currentUserId)) return@mapNotNull null
+                val otherUserId = participantIds.firstOrNull { it != currentUserId } ?: return@mapNotNull null
+
+                var lastMessage: ChatMessage? = null
+                for (msgChild in chatChild.child("messages").children) {
+                    val data = msgChild.children.associate { it.key!! to it.value }
+                    val message = ChatMessage.fromMap(msgChild.key!!, data)
+                    if (lastMessage == null || message.timestamp > lastMessage.timestamp) {
+                        lastMessage = message
+                    }
+                }
+
+                ChatConversation(otherUserId = otherUserId, lastMessage = lastMessage)
+            }.sortedByDescending { it.lastMessage?.timestamp ?: 0L }
+            Result.success(conversations)
         } catch (e: Exception) {
             Result.failure(e)
         }

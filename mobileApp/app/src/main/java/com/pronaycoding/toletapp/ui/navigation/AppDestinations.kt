@@ -2,9 +2,11 @@ package com.pronaycoding.toletapp.ui.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
@@ -32,6 +34,11 @@ enum class AppDestinations(
         unselectedIcon = Icons.Filled.Add,
         isCenterAction = true,
     ),
+    CHAT(
+        label = "Chat",
+        selectedIcon = Icons.AutoMirrored.Filled.Chat,
+        unselectedIcon = Icons.Outlined.ChatBubbleOutline,
+    ),
     PROFILE(
         label = "Profile",
         selectedIcon = Icons.Filled.Person,
@@ -40,6 +47,6 @@ enum class AppDestinations(
     ;
 
     companion object {
-        val bottomBarItems: List<AppDestinations> = listOf(HOME, SAVED, POST, PROFILE)
+        val bottomBarItems: List<AppDestinations> = listOf(HOME, SAVED, POST, CHAT, PROFILE)
     }
 }

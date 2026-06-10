@@ -44,6 +44,27 @@ class UserRepository(
         }
     }
 
+    suspend fun findUserByPhone(phone: String): Result<UserProfile?> {
+        return try {
+            val normalized = phone.filter { it.isDigit() }
+            if (normalized.isBlank()) {
+                return Result.success(null)
+            }
+            val snapshot = database.getReference("users").get().await()
+            val match = snapshot.children.firstOrNull { child ->
+                val data = child.children.associate { it.key!! to it.value }
+                val profile = UserProfile.fromMap(data)
+                profile.phoneNumber.filter { it.isDigit() } == normalized
+            }?.let { child ->
+                val data = child.children.associate { it.key!! to it.value }
+                UserProfile.fromMap(data)
+            }
+            Result.success(match)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun getUserProfile(userId: String): Result<UserProfile> {
         return try {
             val snapshot = usersRef(userId).get().await()
