@@ -2,14 +2,15 @@ package com.pronaycoding.toletapp
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -34,11 +35,11 @@ import com.pronaycoding.toletapp.data.UserRepository
 import com.pronaycoding.toletapp.ui.add.AddToletScreen
 import com.pronaycoding.toletapp.ui.auth.SignInScreen
 import com.pronaycoding.toletapp.ui.chat.ChatListScreen
-import com.pronaycoding.toletapp.ui.chat.ChatScreen
-import com.pronaycoding.toletapp.ui.detail.ToletDetailScreen
 import com.pronaycoding.toletapp.ui.home.HomeScreen
 import com.pronaycoding.toletapp.ui.navigation.AppDestinations
+import com.pronaycoding.toletapp.ui.navigation.OverlayHost
 import com.pronaycoding.toletapp.ui.navigation.ToletBottomBar
+import com.pronaycoding.toletapp.ui.navigation.rememberAppNavigator
 import com.pronaycoding.toletapp.ui.phone.PhoneNumberScreen
 import com.pronaycoding.toletapp.ui.profile.ProfileScreen
 import com.pronaycoding.toletapp.ui.saved.SavedScreen
@@ -64,18 +65,21 @@ fun ToletAppApp() {
     val authManager = remember { GoogleAuthManager(context) }
     val userRepository = remember { UserRepository() }
     val coroutineScope = rememberCoroutineScope()
+    val navigator = rememberAppNavigator()
 
     var currentUser by remember { mutableStateOf(FirebaseAuth.getInstance().currentUser) }
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
     var isSigningIn by rememberSaveable { mutableStateOf(false) }
     var signInError by rememberSaveable { mutableStateOf<String?>(null) }
     var hasPhone by remember { mutableStateOf<Boolean?>(null) }
-    var selectedListing by remember { mutableStateOf<ToletListing?>(null) }
-    var chatWithUser by remember { mutableStateOf<UserProfile?>(null) }
+    var profileHasSubRoute by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
         val listener = FirebaseAuth.AuthStateListener { auth ->
             currentUser = auth.currentUser
+            if (auth.currentUser == null) {
+                navigator.clearOverlays()
+            }
         }
         FirebaseAuth.getInstance().addAuthStateListener(listener)
         onDispose {
@@ -126,24 +130,11 @@ fun ToletAppApp() {
             )
         }
 
-        chatWithUser != null -> {
-            ChatScreen(
+        navigator.currentOverlay != null -> {
+            OverlayHost(
+                overlay = navigator.currentOverlay!!,
                 currentUser = user,
-                otherUser = chatWithUser!!,
-                onBack = { chatWithUser = null },
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
-
-        selectedListing != null -> {
-            ToletDetailScreen(
-                listing = selectedListing!!,
-                currentUser = user,
-                userRepository = userRepository,
-                onBack = { selectedListing = null },
-                onChatClick = { profile ->
-                    chatWithUser = profile
-                },
+                navigator = navigator,
                 modifier = Modifier.fillMaxSize(),
             )
         }
@@ -153,8 +144,10 @@ fun ToletAppApp() {
                 user = user,
                 currentDestination = currentDestination,
                 onDestinationChange = { currentDestination = it },
-                onListingClick = { selectedListing = it },
-                onChatClick = { chatWithUser = it },
+                onListingClick = navigator::openListing,
+                onChatClick = navigator::openChat,
+                profileHasSubRoute = profileHasSubRoute,
+                onProfileSubRouteChange = { profileHasSubRoute = it },
                 onSignOut = { authManager.signOut() },
             )
         }
@@ -168,8 +161,17 @@ private fun MainNavigation(
     onDestinationChange: (AppDestinations) -> Unit,
     onListingClick: (ToletListing) -> Unit,
     onChatClick: (UserProfile) -> Unit,
+    profileHasSubRoute: Boolean,
+    onProfileSubRouteChange: (Boolean) -> Unit,
     onSignOut: () -> Unit,
 ) {
+    val shouldHandleTabBack = currentDestination != AppDestinations.HOME &&
+        !(currentDestination == AppDestinations.PROFILE && profileHasSubRoute)
+
+    BackHandler(enabled = shouldHandleTabBack) {
+        onDestinationChange(AppDestinations.HOME)
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -186,34 +188,35 @@ private fun MainNavigation(
             },
         ) { innerPadding ->
             when (currentDestination) {
-            AppDestinations.HOME -> HomeScreen(
-                onListingClick = onListingClick,
-                modifier = Modifier.padding(innerPadding),
-            )
+                AppDestinations.HOME -> HomeScreen(
+                    onListingClick = onListingClick,
+                    modifier = Modifier.padding(innerPadding),
+                )
 
-            AppDestinations.POST -> AddToletScreen(
-                user = user,
-                modifier = Modifier.padding(innerPadding),
-                onListingPosted = { onDestinationChange(AppDestinations.HOME) },
-            )
+                AppDestinations.POST -> AddToletScreen(
+                    user = user,
+                    modifier = Modifier.padding(innerPadding),
+                    onListingPosted = { onDestinationChange(AppDestinations.HOME) },
+                )
 
-            AppDestinations.SAVED -> SavedScreen(
-                user = user,
-                onListingClick = onListingClick,
-                modifier = Modifier.padding(innerPadding),
-            )
+                AppDestinations.SAVED -> SavedScreen(
+                    user = user,
+                    onListingClick = onListingClick,
+                    modifier = Modifier.padding(innerPadding),
+                )
 
-            AppDestinations.CHAT -> ChatListScreen(
-                user = user,
-                onChatClick = onChatClick,
-                modifier = Modifier.padding(innerPadding),
-            )
+                AppDestinations.CHAT -> ChatListScreen(
+                    user = user,
+                    onChatClick = onChatClick,
+                    modifier = Modifier.padding(innerPadding),
+                )
 
-            AppDestinations.PROFILE -> ProfileScreen(
-                user = user,
-                onSignOutClick = onSignOut,
-                modifier = Modifier.padding(innerPadding),
-            )
+                AppDestinations.PROFILE -> ProfileScreen(
+                    user = user,
+                    onSignOutClick = onSignOut,
+                    onSubRouteChange = onProfileSubRouteChange,
+                    modifier = Modifier.padding(innerPadding),
+                )
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.pronaycoding.toletapp.ui.profile
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -54,11 +55,27 @@ private enum class ProfileRoute {
 fun ProfileScreen(
     user: FirebaseUser,
     onSignOutClick: () -> Unit,
+    onSubRouteChange: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
     userRepository: UserRepository = remember { UserRepository() },
 ) {
     var route by remember { mutableStateOf(ProfileRoute.Main) }
     var editingListing by remember { mutableStateOf<ToletListing?>(null) }
+
+    LaunchedEffect(route) {
+        onSubRouteChange(route != ProfileRoute.Main)
+    }
+
+    BackHandler(enabled = route != ProfileRoute.Main) {
+        when (route) {
+            ProfileRoute.EditListing -> {
+                editingListing = null
+                route = ProfileRoute.MyListings
+            }
+            ProfileRoute.MyListings -> route = ProfileRoute.Main
+            ProfileRoute.Main -> Unit
+        }
+    }
 
     when (route) {
         ProfileRoute.Main -> ProfileMainScreen(
