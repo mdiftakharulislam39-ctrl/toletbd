@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1095465104015",
+    "project_id": "toletapp-6eb8e",
+    "storage_bucket": "toletapp-6eb8e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1095465104015:android:21bbfda29a0d25c19636fa",
+        "android_client_info": {
+          "package_name": "com.pronaycoding.toletapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBf48bDXnU3K1ytg2Jk6nZwEbE3LvdnT1g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
