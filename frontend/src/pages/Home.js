@@ -19,19 +19,87 @@ function Home() {
     <div>
       <div style={styles.hero}>
         <h1 style={styles.heroTitle}>আপনার স্বপ্নের বাসা খুঁজুন</h1>
-        <p style={styles.heroSub}>সারা বাংলাদেশে হাজারো To-Let বিজ্ঞাপন</p>
+        <p style={styles.heroSub}>ঢাকার সেরা To-Let বিজ্ঞাপন</p>
 
         <div style={styles.searchBox}>
           <select style={styles.select} value={location} onChange={e => setLocation(e.target.value)}>
             <option value="">এলাকা বেছে নিন</option>
-            <option value="Mirpur">Mirpur</option>
-            <option value="Uttara">Uttara</option>
-            <option value="Dhanmondi">Dhanmondi</option>
-            <option value="Bashundhara">Bashundhara</option>
-            <option value="Banani">Banani</option>
-            <option value="Mohammadpur">Mohammadpur</option>
-            <option value="Gulshan">Gulshan</option>
-            <option value="Khilgaon">Khilgaon</option>
+            <optgroup label="মিরপুর">
+              <option value="Mirpur 1">Mirpur 1</option>
+              <option value="Mirpur 2">Mirpur 2</option>
+              <option value="Mirpur 6">Mirpur 6</option>
+              <option value="Mirpur 7">Mirpur 7</option>
+              <option value="Mirpur 10">Mirpur 10</option>
+              <option value="Mirpur 11">Mirpur 11</option>
+              <option value="Mirpur 12">Mirpur 12</option>
+              <option value="Mirpur 13">Mirpur 13</option>
+              <option value="Mirpur 14">Mirpur 14</option>
+              <option value="Shewrapara">Shewrapara</option>
+              <option value="Kazipara">Kazipara</option>
+              <option value="Pallabi">Pallabi</option>
+            </optgroup>
+            <optgroup label="উত্তরা">
+              <option value="Uttara Sector 1">Uttara Sector 1</option>
+              <option value="Uttara Sector 3">Uttara Sector 3</option>
+              <option value="Uttara Sector 4">Uttara Sector 4</option>
+              <option value="Uttara Sector 6">Uttara Sector 6</option>
+              <option value="Uttara Sector 7">Uttara Sector 7</option>
+              <option value="Uttara Sector 10">Uttara Sector 10</option>
+              <option value="Uttara Sector 11">Uttara Sector 11</option>
+              <option value="Uttara Sector 12">Uttara Sector 12</option>
+              <option value="Abdullahpur">Abdullahpur</option>
+              <option value="Azampur">Azampur</option>
+            </optgroup>
+            <optgroup label="ধানমন্ডি">
+              <option value="Dhanmondi">Dhanmondi</option>
+              <option value="Dhanmondi 15">Dhanmondi 15</option>
+              <option value="Dhanmondi 32">Dhanmondi 32</option>
+              <option value="Kalabagan">Kalabagan</option>
+              <option value="Shyamoli">Shyamoli</option>
+              <option value="Adabor">Adabor</option>
+            </optgroup>
+            <optgroup label="গুলশান/বনানী">
+              <option value="Gulshan 1">Gulshan 1</option>
+              <option value="Gulshan 2">Gulshan 2</option>
+              <option value="Banani">Banani</option>
+              <option value="Niketon">Niketon</option>
+              <option value="Baridhara">Baridhara</option>
+              <option value="Bashundhara R/A">Bashundhara R/A</option>
+            </optgroup>
+            <optgroup label="রামপুরা/বাড্ডা">
+              <option value="Rampura">Rampura</option>
+              <option value="Banasree">Banasree</option>
+              <option value="Badda">Badda</option>
+              <option value="Khilgaon">Khilgaon</option>
+              <option value="Malibag">Malibag</option>
+              <option value="Mugda">Mugda</option>
+              <option value="Goran">Goran</option>
+            </optgroup>
+            <optgroup label="মোহাম্মদপুর">
+              <option value="Mohammadpur">Mohammadpur</option>
+              <option value="Bosila">Bosila</option>
+              <option value="Rayerbazar">Rayerbazar</option>
+            </optgroup>
+            <optgroup label="যাত্রাবাড়ী/ডেমরা">
+              <option value="Jatrabari">Jatrabari</option>
+              <option value="Demra">Demra</option>
+              <option value="Postogola">Postogola</option>
+              <option value="Shyampur">Shyampur</option>
+            </optgroup>
+            <optgroup label="অন্যান্য">
+              <option value="Farmgate">Farmgate</option>
+              <option value="Tejgaon">Tejgaon</option>
+              <option value="Moghbazar">Moghbazar</option>
+              <option value="Eskaton">Eskaton</option>
+              <option value="Panthapath">Panthapath</option>
+              <option value="Kawran Bazar">Kawran Bazar</option>
+              <option value="Agargaon">Agargaon</option>
+              <option value="Sher-E-Bangla Nagar">Sher-E-Bangla Nagar</option>
+              <option value="Gazipur">Gazipur</option>
+              <option value="Savar">Savar</option>
+              <option value="Keraniganj">Keraniganj</option>
+              <option value="Narayanganj">Narayanganj</option>
+            </optgroup>
           </select>
 
           <select style={styles.select} value={propertyType} onChange={e => setPropertyType(e.target.value)}>

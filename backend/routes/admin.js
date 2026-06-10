@@ -3,6 +3,7 @@ const router = express.Router();
 const Property = require('../models/Property');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const { sendApprovalEmail, sendRejectionEmail } = require('../mailer');
 
 // Admin middleware
 const adminAuth = (req, res, next) => {
@@ -18,7 +19,7 @@ const adminAuth = (req, res, next) => {
   }
 };
 
-// সব pending properties
+// সব properties
 router.get('/properties', adminAuth, async (req, res) => {
   try {
     const properties = await Property.find().populate('owner_id', 'name phone email');
@@ -36,7 +37,16 @@ router.put('/properties/:id', adminAuth, async (req, res) => {
       req.params.id,
       { status },
       { new: true }
-    );
+    ).populate('owner_id', 'name email');
+
+    if (property && property.owner_id && property.owner_id.email) {
+      if (status === 'approved') {
+        await sendApprovalEmail(property.owner_id.email, property.title);
+      } else if (status === 'rejected') {
+        await sendRejectionEmail(property.owner_id.email, property.title);
+      }
+    }
+
     res.json({ message: `Property ${status} হয়েছে!`, property });
   } catch (err) {
     res.status(500).json({ message: 'Error', error: err.message });

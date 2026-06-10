@@ -4,9 +4,11 @@ import { Link, useNavigate } from 'react-router-dom';
 function Navbar() {
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     navigate('/login');
   };
 
@@ -17,7 +19,15 @@ function Navbar() {
         <Link to="/properties" style={styles.link}>বাসা খুঁজুন</Link>
         {token ? (
           <>
-            <Link to="/post-property" style={styles.link}>বাসা দিন</Link>
+            {(user.role === 'owner' || user.role === 'admin') && (
+              <Link to="/post-property" style={styles.link}>বাসা দিন</Link>
+            )}
+            {(user.role === 'owner' || user.role === 'admin') && (
+              <Link to="/my-properties" style={styles.link}>আমার বিজ্ঞাপন</Link>
+            )}
+            {user.role === 'admin' && (
+              <Link to="/admin" style={styles.link}>Admin</Link>
+            )}
             <button onClick={logout} style={styles.btn}>Logout</button>
           </>
         ) : (

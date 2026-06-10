@@ -8,6 +8,9 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import PostProperty from './pages/PostProperty';
 import AdminPanel from './pages/AdminPanel';
+import MyProperties from './pages/MyProperties';
+import EditProperty from './pages/EditProperty';
+import ProtectedRoute from './ProtectedRoute';
 
 function App() {
   return (
@@ -15,12 +18,27 @@ function App() {
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/properties" element={<PropertyList />} />
-        <Route path="/properties/:id" element={<PropertyDetail />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/post-property" element={<PostProperty />} />
-        <Route path="/admin" element={<AdminPanel />} />
+
+        <Route path="/properties" element={
+          <ProtectedRoute><PropertyList /></ProtectedRoute>
+        } />
+        <Route path="/properties/:id" element={
+          <ProtectedRoute><PropertyDetail /></ProtectedRoute>
+        } />
+        <Route path="/post-property" element={
+          <ProtectedRoute><PostProperty /></ProtectedRoute>
+        } />
+        <Route path="/my-properties" element={
+          <ProtectedRoute><MyProperties /></ProtectedRoute>
+        } />
+        <Route path="/edit-property/:id" element={
+          <ProtectedRoute><EditProperty /></ProtectedRoute>
+        } />
+        <Route path="/admin" element={
+          <ProtectedRoute><AdminPanel /></ProtectedRoute>
+        } />
       </Routes>
     </Router>
   );
