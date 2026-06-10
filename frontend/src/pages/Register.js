@@ -16,7 +16,7 @@ function Register() {
 
   const handleSubmit = async () => {
     try {
-      await axios.post('http://localhost:5000/api/auth/register', form);
+      await axios.post('https://toletbd-30a6.onrender.com/api/auth/register', form);
       setSuccess('Registration সফল! Login করুন।');
       setTimeout(() => navigate('/login'), 2000);
     } catch (err) {

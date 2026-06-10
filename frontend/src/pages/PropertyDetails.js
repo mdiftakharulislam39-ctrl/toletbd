@@ -13,7 +13,7 @@ function PropertyDetail() {
 
   const fetchProperty = async () => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/properties/${id}`);
+      const res = await axios.get(`https://toletbd-30a6.onrender.com/api/properties/${id}`);
       setProperty(res.data);
     } catch (err) {
       console.log(err);

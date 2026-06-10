@@ -20,7 +20,7 @@ function AdminPanel() {
 
   const fetchProperties = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/admin/properties', {
+      const res = await axios.get('https://toletbd-30a6.onrender.com/api/admin/properties', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setProperties(res.data);
@@ -33,7 +33,7 @@ function AdminPanel() {
 
   const updateStatus = async (id, status) => {
     try {
-      await axios.put(`http://localhost:5000/api/admin/properties/${id}`,
+      await axios.put(`https://toletbd-30a6.onrender.com/api/admin/properties/${id}`,
         { status },
         { headers: { Authorization: `Bearer ${token}` } }
       );

@@ -15,7 +15,7 @@ function MyProperties() {
 
   const fetchMyProperties = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/properties/my', {
+      const res = await axios.get('https://toletbd-30a6.onrender.com/api/properties/my', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setProperties(res.data);
@@ -29,7 +29,7 @@ function MyProperties() {
   const handleDelete = async (id) => {
     if (!window.confirm('এই property delete করতে চান?')) return;
     try {
-      await axios.delete(`http://localhost:5000/api/properties/delete/${id}`, {
+      await axios.delete(`https://toletbd-30a6.onrender.com/api/properties/delete/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchMyProperties();
@@ -41,7 +41,7 @@ function MyProperties() {
   const handleRented = async (id) => {
     if (!window.confirm('এই বাসা ভাড়া হয়ে গেছে mark করতে চান?')) return;
     try {
-      await axios.put(`http://localhost:5000/api/properties/rented/${id}`, {}, {
+      await axios.put(`https://toletbd-30a6.onrender.com/api/properties/rented/${id}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchMyProperties();

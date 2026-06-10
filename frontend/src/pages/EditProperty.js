@@ -22,7 +22,7 @@ function EditProperty() {
 
   const fetchProperty = async () => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/properties/${id}`);
+      const res = await axios.get(`https://toletbd-30a6.onrender.com/api/properties/${id}`);
       const p = res.data;
       setForm({
         title: p.title || '',
@@ -62,7 +62,7 @@ function EditProperty() {
       Object.keys(form).forEach(key => formData.append(key, form[key]));
       images.forEach(img => formData.append('images', img));
 
-      await axios.put(`http://localhost:5000/api/properties/edit/${id}`, formData, {
+      await axios.put(`https://toletbd-30a6.onrender.com/api/properties/edit/${id}`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'

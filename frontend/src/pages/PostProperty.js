@@ -138,7 +138,7 @@ function PostProperty() {
       form.facilities.forEach(f => formData.append('facilities[]', f));
       images.forEach(img => formData.append('images', img));
 
-      await axios.post('http://localhost:5000/api/properties/add', formData, {
+      await axios.post('https://toletbd-30a6.onrender.com/api/properties/add', formData, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
       });
       setSuccess('Property add হয়েছে! Admin approve করলে দেখা যাবে।');
