@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">toletApp</string>
+    <string name="google_web_client_id">YOUR_WEB_CLIENT_ID</string>
+    <string name="sign_in_title">Welcome to toletApp</string>
+    <string name="sign_in_subtitle">Sign in with your Google account to continue</string>
+    <string name="sign_in_with_google">Sign in with Google</string>
+    <string name="sign_out">Sign out</string>
+    <string name="profile_title">Profile</string>
 </resources>
