@@ -22,6 +22,7 @@
       "$userId": {
         ".read": "auth != null && auth.uid === $userId",
         "$chatId": {
+          ".read": "auth != null && auth.uid === $userId",
           ".write": "auth != null"
         }
       }
@@ -30,7 +31,7 @@
       "$chatId": {
         ".read": "auth != null && data.child('participants').child(auth.uid).val() === true",
         "participants": {
-          ".read": "auth != null && data.child(auth.uid).val() === true",
+          ".read": "auth != null && root.child('chats').child($chatId).child('participants').child(auth.uid).val() === true",
           ".write": "auth != null"
         },
         "messages": {

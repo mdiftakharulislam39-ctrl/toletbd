@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -15,56 +16,28 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.pronaycoding.toletapp.R
-import com.pronaycoding.toletapp.data.ToletRepository
 import com.pronaycoding.toletapp.data.model.ToletListing
-import kotlinx.coroutines.launch
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun HomeScreen(
     onListingClick: (ToletListing) -> Unit,
     modifier: Modifier = Modifier,
-    repository: ToletRepository = remember { ToletRepository() },
+    viewModel: HomeViewModel = koinViewModel(),
 ) {
-    var locationQuery by remember { mutableStateOf("") }
-    var listings by remember { mutableStateOf<List<ToletListing>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    val coroutineScope = rememberCoroutineScope()
-
-    fun loadListings(query: String = locationQuery) {
-        coroutineScope.launch {
-            isLoading = true
-            errorMessage = null
-            val result = if (query.isBlank()) {
-                repository.getAllListings()
-            } else {
-                repository.searchByLocation(query)
-            }
-            result
-                .onSuccess { listings = it }
-                .onFailure { errorMessage = it.message ?: "Failed to load listings." }
-            isLoading = false
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        loadListings("")
-    }
+    val uiState by viewModel.uiState.collectAsState()
 
     Column(
         modifier = modifier
             .fillMaxSize()
+            .statusBarsPadding()
             .padding(16.dp),
     ) {
         Text(
@@ -73,8 +46,8 @@ fun HomeScreen(
         )
 
         OutlinedTextField(
-            value = locationQuery,
-            onValueChange = { locationQuery = it },
+            value = uiState.locationQuery,
+            onValueChange = viewModel::onLocationQueryChange,
             label = { Text(stringResource(R.string.location_hint)) },
             placeholder = { Text(stringResource(R.string.location_placeholder)) },
             modifier = Modifier
@@ -84,7 +57,7 @@ fun HomeScreen(
         )
 
         Button(
-            onClick = { loadListings(locationQuery) },
+            onClick = viewModel::search,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp),
@@ -93,7 +66,7 @@ fun HomeScreen(
         }
 
         when {
-            isLoading -> {
+            uiState.isLoading -> {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -104,15 +77,15 @@ fun HomeScreen(
                 }
             }
 
-            errorMessage != null -> {
+            uiState.errorMessage != null -> {
                 Text(
-                    text = errorMessage!!,
+                    text = uiState.errorMessage!!,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(top = 16.dp),
                 )
             }
 
-            listings.isEmpty() -> {
+            uiState.listings.isEmpty() -> {
                 Text(
                     text = stringResource(R.string.no_listings),
                     style = MaterialTheme.typography.bodyLarge,
@@ -123,7 +96,7 @@ fun HomeScreen(
 
             else -> {
                 Text(
-                    text = stringResource(R.string.results_count, listings.size),
+                    text = stringResource(R.string.results_count, uiState.listings.size),
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
                 )
@@ -132,7 +105,7 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(bottom = 16.dp),
                 ) {
-                    items(listings, key = { it.id }) { listing ->
+                    items(uiState.listings, key = { it.id }) { listing ->
                         ToletListingCard(
                             listing = listing,
                             onClick = { onListingClick(listing) },

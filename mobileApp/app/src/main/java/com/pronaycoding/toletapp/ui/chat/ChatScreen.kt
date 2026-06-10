@@ -24,20 +24,15 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.FirebaseUser
-import com.pronaycoding.toletapp.data.ChatRepository
-import com.pronaycoding.toletapp.data.model.ChatMessage
 import com.pronaycoding.toletapp.data.model.UserProfile
-import kotlinx.coroutines.launch
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,26 +41,9 @@ fun ChatScreen(
     otherUser: UserProfile,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    chatRepository: ChatRepository = remember { ChatRepository() },
+    viewModel: ChatViewModel = koinViewModel { parametersOf(currentUser.uid, otherUser) },
 ) {
-    var messages by remember { mutableStateOf<List<ChatMessage>>(emptyList()) }
-    var messageText by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(true) }
-    var isSending by remember { mutableStateOf(false) }
-    val coroutineScope = rememberCoroutineScope()
-
-    fun loadMessages() {
-        coroutineScope.launch {
-            isLoading = true
-            chatRepository.getMessages(currentUser.uid, otherUser.userId)
-                .onSuccess { messages = it }
-            isLoading = false
-        }
-    }
-
-    LaunchedEffect(otherUser.userId) {
-        loadMessages()
-    }
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         modifier = modifier,
@@ -85,7 +63,7 @@ fun ChatScreen(
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {
-            if (isLoading) {
+            if (uiState.isLoading) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
@@ -101,7 +79,7 @@ fun ChatScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     reverseLayout = true,
                 ) {
-                    items(messages.reversed(), key = { it.id }) { message ->
+                    items(uiState.messages.reversed(), key = { it.id }) { message ->
                         val isMine = message.senderId == currentUser.uid
                         Box(
                             modifier = Modifier.fillMaxWidth(),
@@ -137,29 +115,15 @@ fun ChatScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 OutlinedTextField(
-                    value = messageText,
-                    onValueChange = { messageText = it },
+                    value = uiState.messageText,
+                    onValueChange = viewModel::onMessageTextChange,
                     modifier = Modifier.weight(1f),
                     placeholder = { Text("Type a message") },
                     singleLine = true,
                 )
                 IconButton(
-                    onClick = {
-                        if (messageText.isBlank() || isSending) return@IconButton
-                        coroutineScope.launch {
-                            isSending = true
-                            chatRepository.sendMessage(
-                                currentUserId = currentUser.uid,
-                                otherUserId = otherUser.userId,
-                                text = messageText,
-                            ).onSuccess {
-                                messageText = ""
-                                loadMessages()
-                            }
-                            isSending = false
-                        }
-                    },
-                    enabled = messageText.isNotBlank() && !isSending,
+                    onClick = viewModel::sendMessage,
+                    enabled = uiState.messageText.isNotBlank(),
                 ) {
                     Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
                 }

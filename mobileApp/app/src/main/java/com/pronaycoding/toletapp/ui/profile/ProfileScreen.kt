@@ -11,11 +11,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -24,8 +26,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,10 +44,10 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseUser
 import com.pronaycoding.toletapp.R
-import com.pronaycoding.toletapp.data.UserRepository
 import com.pronaycoding.toletapp.data.model.ToletListing
 import com.pronaycoding.toletapp.data.model.UserProfile
 import com.pronaycoding.toletapp.ui.add.AddToletScreen
+import org.koin.compose.viewmodel.koinViewModel
 
 private enum class ProfileRoute {
     Main,
@@ -55,9 +59,10 @@ private enum class ProfileRoute {
 fun ProfileScreen(
     user: FirebaseUser,
     onSignOutClick: () -> Unit,
+    onDeleteAccount: suspend () -> Result<Unit>,
     onSubRouteChange: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
-    userRepository: UserRepository = remember { UserRepository() },
+    viewModel: ProfileViewModel = koinViewModel(),
 ) {
     var route by remember { mutableStateOf(ProfileRoute.Main) }
     var editingListing by remember { mutableStateOf<ToletListing?>(null) }
@@ -80,9 +85,11 @@ fun ProfileScreen(
     when (route) {
         ProfileRoute.Main -> ProfileMainScreen(
             user = user,
-            userRepository = userRepository,
+            viewModel = viewModel,
             onViewMyListings = { route = ProfileRoute.MyListings },
             onSignOutClick = onSignOutClick,
+            onDeleteAccount = onDeleteAccount,
+            onAccountDeleted = onSignOutClick,
             modifier = modifier,
         )
 
@@ -121,26 +128,24 @@ fun ProfileScreen(
 @Composable
 private fun ProfileMainScreen(
     user: FirebaseUser,
-    userRepository: UserRepository,
+    viewModel: ProfileViewModel,
     onViewMyListings: () -> Unit,
     onSignOutClick: () -> Unit,
+    onDeleteAccount: suspend () -> Result<Unit>,
+    onAccountDeleted: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var profile by remember { mutableStateOf<UserProfile?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val uiState by viewModel.uiState.collectAsState()
+    val deleteFailedMessage = stringResource(R.string.delete_account_failed)
 
     LaunchedEffect(user.uid) {
-        isLoading = true
-        userRepository.getUserProfile(user.uid)
-            .onSuccess { profile = it }
-            .onFailure { errorMessage = it.message }
-        isLoading = false
+        viewModel.loadProfile(user.uid)
     }
 
     Column(
         modifier = modifier
             .fillMaxSize()
+            .statusBarsPadding()
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
     ) {
@@ -150,7 +155,7 @@ private fun ProfileMainScreen(
         )
 
         when {
-            isLoading -> {
+            uiState.isLoading -> {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -164,13 +169,13 @@ private fun ProfileMainScreen(
             else -> {
                 ProfileDetailsCard(
                     user = user,
-                    profile = profile,
+                    profile = uiState.profile,
                     modifier = Modifier.padding(top = 16.dp),
                 )
 
-                if (errorMessage != null) {
+                uiState.errorMessage?.let { message ->
                     Text(
-                        text = errorMessage!!,
+                        text = message,
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(top = 8.dp),
@@ -209,11 +214,78 @@ private fun ProfileMainScreen(
                 OutlinedButton(
                     onClick = onSignOutClick,
                     modifier = Modifier.fillMaxWidth(),
+                    enabled = !uiState.isDeletingAccount,
                 ) {
                     Text(text = stringResource(R.string.sign_out))
                 }
+
+                TextButton(
+                    onClick = viewModel::showDeleteDialog,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    enabled = !uiState.isDeletingAccount,
+                ) {
+                    Text(
+                        text = stringResource(R.string.delete_account),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+
+                if (uiState.isDeletingAccount) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+
+                uiState.deleteErrorMessage?.let { message ->
+                    Text(
+                        text = message,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
             }
         }
+    }
+
+    if (uiState.showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = viewModel::dismissDeleteDialog,
+            title = { Text(stringResource(R.string.delete_account_confirm_title)) },
+            text = { Text(stringResource(R.string.delete_account_confirm_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteAccount(
+                            onDelete = onDeleteAccount,
+                            onSuccess = onAccountDeleted,
+                            onFailureMessage = deleteFailedMessage,
+                        )
+                    },
+                    enabled = !uiState.isDeletingAccount,
+                ) {
+                    Text(
+                        text = stringResource(R.string.delete_account),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = viewModel::dismissDeleteDialog,
+                    enabled = !uiState.isDeletingAccount,
+                ) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            },
+        )
     }
 }
 
