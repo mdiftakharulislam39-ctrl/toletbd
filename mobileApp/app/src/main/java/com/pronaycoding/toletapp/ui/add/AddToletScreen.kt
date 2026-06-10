@@ -15,16 +15,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,6 +50,7 @@ import com.google.firebase.auth.FirebaseUser
 import com.pronaycoding.toletapp.R
 import com.pronaycoding.toletapp.data.ToletRepository
 import com.pronaycoding.toletapp.data.model.ToletListing
+import com.pronaycoding.toletapp.ui.common.ListingImage
 import kotlinx.coroutines.launch
 
 private val propertyTypes = listOf("Flat", "House", "Room", "Office")
@@ -53,36 +61,44 @@ fun AddToletScreen(
     user: FirebaseUser,
     modifier: Modifier = Modifier,
     repository: ToletRepository = remember { ToletRepository() },
+    listingToEdit: ToletListing? = null,
     onListingPosted: () -> Unit = {},
+    onBack: (() -> Unit)? = null,
 ) {
-    var title by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var location by remember { mutableStateOf("") }
-    var price by remember { mutableStateOf("") }
-    var bedrooms by remember { mutableStateOf("") }
-    var propertyType by remember { mutableStateOf(propertyTypes.first()) }
+    val isEditMode = listingToEdit != null
+
+    var title by remember(listingToEdit) { mutableStateOf(listingToEdit?.title.orEmpty()) }
+    var description by remember(listingToEdit) { mutableStateOf(listingToEdit?.description.orEmpty()) }
+    var location by remember(listingToEdit) { mutableStateOf(listingToEdit?.location.orEmpty()) }
+    var price by remember(listingToEdit) { mutableStateOf(listingToEdit?.price.orEmpty()) }
+    var bedrooms by remember(listingToEdit) { mutableStateOf(listingToEdit?.bedrooms.orEmpty()) }
+    var propertyType by remember(listingToEdit) {
+        mutableStateOf(listingToEdit?.propertyType?.takeIf { it in propertyTypes } ?: propertyTypes.first())
+    }
     var propertyTypeExpanded by remember { mutableStateOf(false) }
+    var existingImages by remember(listingToEdit) {
+        mutableStateOf(listingToEdit?.images.orEmpty())
+    }
     var selectedImages by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var isSubmitting by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var successMessage by remember { mutableStateOf<String?>(null) }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+    val totalImageCount = existingImages.size + selectedImages.size
+    val remainingImageSlots = ToletRepository.MAX_IMAGES - totalImageCount
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(ToletRepository.MAX_IMAGES),
     ) { uris ->
-        selectedImages = (selectedImages + uris).take(ToletRepository.MAX_IMAGES)
+        selectedImages = (selectedImages + uris).take(remainingImageSlots.coerceAtLeast(0))
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-    ) {
+    val formContent: @Composable () -> Unit = {
         Text(
-            text = stringResource(R.string.post_tolet_title),
+            text = stringResource(
+                if (isEditMode) R.string.edit_tolet_title else R.string.post_tolet_title,
+            ),
             style = MaterialTheme.typography.headlineSmall,
         )
 
@@ -174,7 +190,7 @@ fun AddToletScreen(
         }
 
         Text(
-            text = stringResource(R.string.images_label, selectedImages.size, ToletRepository.MAX_IMAGES),
+            text = stringResource(R.string.images_label, totalImageCount, ToletRepository.MAX_IMAGES),
             style = MaterialTheme.typography.labelLarge,
             modifier = Modifier.padding(top = 16.dp),
         )
@@ -185,16 +201,61 @@ fun AddToletScreen(
                 .padding(top = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            selectedImages.forEach { uri ->
-                AsyncImage(
-                    model = uri,
-                    contentDescription = null,
+            existingImages.forEachIndexed { index, imageData ->
+                Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(120.dp)
-                        .clip(RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Crop,
-                )
+                        .height(120.dp),
+                ) {
+                    ListingImage(
+                        imageData = imageData,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop,
+                    )
+                    if (isEditMode) {
+                        IconButton(
+                            onClick = { existingImages = existingImages.filterIndexed { i, _ -> i != index } },
+                            modifier = Modifier.align(Alignment.TopEnd),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Close,
+                                contentDescription = stringResource(R.string.remove_image),
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                }
+            }
+            selectedImages.forEachIndexed { index, uri ->
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(120.dp),
+                ) {
+                    AsyncImage(
+                        model = uri,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop,
+                    )
+                    IconButton(
+                        onClick = { selectedImages = selectedImages.filterIndexed { i, _ -> i != index } },
+                        modifier = Modifier.align(Alignment.TopEnd),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = stringResource(R.string.remove_image),
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
             }
         }
 
@@ -204,7 +265,7 @@ fun AddToletScreen(
                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
                 )
             },
-            enabled = selectedImages.size < ToletRepository.MAX_IMAGES,
+            enabled = totalImageCount < ToletRepository.MAX_IMAGES,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp),
@@ -234,33 +295,54 @@ fun AddToletScreen(
                                 errorMessage = null
                                 successMessage = null
 
-                                val listing = ToletListing(
-                                    userId = user.uid,
-                                    userName = user.displayName ?: "User",
-                                    title = title.trim(),
-                                    description = description.trim(),
-                                    location = location.trim(),
-                                    locationLower = location.trim().lowercase(),
-                                    price = price.trim(),
-                                    bedrooms = bedrooms.trim().ifBlank { "N/A" },
-                                    propertyType = propertyType,
-                                    createdAt = System.currentTimeMillis(),
-                                )
+                                if (isEditMode) {
+                                    val updatedListing = listingToEdit!!.copy(
+                                        title = title.trim(),
+                                        description = description.trim(),
+                                        location = location.trim(),
+                                        locationLower = location.trim().lowercase(),
+                                        price = price.trim(),
+                                        bedrooms = bedrooms.trim().ifBlank { "N/A" },
+                                        propertyType = propertyType,
+                                        images = existingImages,
+                                    )
+                                    repository.updateListing(context, updatedListing, selectedImages)
+                                        .onSuccess {
+                                            successMessage = "Listing updated successfully!"
+                                            onListingPosted()
+                                        }
+                                        .onFailure {
+                                            errorMessage = it.message ?: "Failed to update listing."
+                                        }
+                                } else {
+                                    val listing = ToletListing(
+                                        userId = user.uid,
+                                        userName = user.displayName ?: "User",
+                                        title = title.trim(),
+                                        description = description.trim(),
+                                        location = location.trim(),
+                                        locationLower = location.trim().lowercase(),
+                                        price = price.trim(),
+                                        bedrooms = bedrooms.trim().ifBlank { "N/A" },
+                                        propertyType = propertyType,
+                                        createdAt = System.currentTimeMillis(),
+                                    )
 
-                                repository.createListing(context, listing, selectedImages)
-                                    .onSuccess {
-                                        successMessage = "To-let posted successfully!"
-                                        title = ""
-                                        description = ""
-                                        location = ""
-                                        price = ""
-                                        bedrooms = ""
-                                        selectedImages = emptyList()
-                                        onListingPosted()
-                                    }
-                                    .onFailure {
-                                        errorMessage = it.message ?: "Failed to post listing."
-                                    }
+                                    repository.createListing(context, listing, selectedImages)
+                                        .onSuccess {
+                                            successMessage = "To-let posted successfully!"
+                                            title = ""
+                                            description = ""
+                                            location = ""
+                                            price = ""
+                                            bedrooms = ""
+                                            selectedImages = emptyList()
+                                            onListingPosted()
+                                        }
+                                        .onFailure {
+                                            errorMessage = it.message ?: "Failed to post listing."
+                                        }
+                                }
 
                                 isSubmitting = false
                             }
@@ -271,7 +353,11 @@ fun AddToletScreen(
                     .fillMaxWidth()
                     .padding(top = 16.dp),
             ) {
-                Text(stringResource(R.string.post_listing))
+                Text(
+                    stringResource(
+                        if (isEditMode) R.string.save_listing_changes else R.string.post_listing,
+                    ),
+                )
             }
         }
 
@@ -289,6 +375,41 @@ fun AddToletScreen(
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(top = 8.dp),
             )
+        }
+    }
+
+    if (isEditMode && onBack != null) {
+        Scaffold(
+            modifier = modifier,
+            topBar = {
+                TopAppBar(
+                    title = { Text(stringResource(R.string.edit_tolet_title)) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                )
+            },
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(innerPadding)
+                    .padding(16.dp),
+            ) {
+                formContent()
+            }
+        }
+    } else {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+        ) {
+            formContent()
         }
     }
 }

@@ -84,6 +84,40 @@ class ToletRepository(
         }
     }
 
+    suspend fun getListingsByUserId(userId: String): Result<List<ToletListing>> {
+        return fetchAllListings().map { listings ->
+            listings.filter { it.userId == userId }
+        }
+    }
+
+    suspend fun updateListing(
+        context: Context,
+        listing: ToletListing,
+        newImageUris: List<Uri>,
+    ): Result<Unit> {
+        if (listing.images.size + newImageUris.size > MAX_IMAGES) {
+            return Result.failure(IllegalArgumentException("Maximum $MAX_IMAGES images allowed."))
+        }
+
+        return try {
+            val newImages = encodeImages(context, newImageUris)
+            val updatedListing = listing.copy(images = listing.images + newImages)
+            listingsRef.child(listing.id).setValue(updatedListing.toMap()).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(Exception(mapErrorMessage(e), e))
+        }
+    }
+
+    suspend fun deleteListing(listingId: String): Result<Unit> {
+        return try {
+            listingsRef.child(listingId).removeValue().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(Exception(mapErrorMessage(e), e))
+        }
+    }
+
     private suspend fun fetchAllListings(): Result<List<ToletListing>> {
         return try {
             val snapshot = listingsRef.get().await()

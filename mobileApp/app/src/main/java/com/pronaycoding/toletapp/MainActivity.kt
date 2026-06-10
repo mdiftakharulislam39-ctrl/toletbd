@@ -4,9 +4,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -20,6 +22,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import com.google.firebase.auth.FirebaseAuth
@@ -167,16 +170,22 @@ private fun MainNavigation(
     onChatClick: (UserProfile) -> Unit,
     onSignOut: () -> Unit,
 ) {
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        bottomBar = {
-            ToletBottomBar(
-                currentDestination = currentDestination,
-                onDestinationChange = onDestinationChange,
-            )
-        },
-    ) { innerPadding ->
-        when (currentDestination) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = Color.Transparent,
+            bottomBar = {
+                ToletBottomBar(
+                    currentDestination = currentDestination,
+                    onDestinationChange = onDestinationChange,
+                )
+            },
+        ) { innerPadding ->
+            when (currentDestination) {
             AppDestinations.HOME -> HomeScreen(
                 onListingClick = onListingClick,
                 modifier = Modifier.padding(innerPadding),
@@ -205,6 +214,7 @@ private fun MainNavigation(
                 onSignOutClick = onSignOut,
                 modifier = Modifier.padding(innerPadding),
             )
+            }
         }
     }
 }

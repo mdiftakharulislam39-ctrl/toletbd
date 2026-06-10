@@ -28,6 +28,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -39,48 +41,57 @@ fun ToletBottomBar(
     onDestinationChange: (AppDestinations) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 3.dp,
-        shadowElevation = 10.dp,
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
     ) {
-        Box(
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .navigationBarsPadding(),
+                .shadow(
+                    elevation = 12.dp,
+                    shape = RoundedCornerShape(28.dp),
+                    clip = false,
+                ),
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 2.dp,
+            shadowElevation = 0.dp,
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                AppDestinations.bottomBarItems.forEach { destination ->
-                    if (destination.isCenterAction) {
-                        BottomBarFabSpacer()
-                    } else {
-                        BottomBarItem(
-                            label = destination.label,
-                            selected = currentDestination == destination,
-                            selectedIcon = destination.selectedIcon,
-                            unselectedIcon = destination.unselectedIcon,
-                            onClick = { onDestinationChange(destination) },
-                            modifier = Modifier.weight(1f),
-                        )
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AppDestinations.bottomBarItems.forEach { destination ->
+                        if (destination.isCenterAction) {
+                            BottomBarFabSpacer()
+                        } else {
+                            BottomBarItem(
+                                label = destination.label,
+                                selected = currentDestination == destination,
+                                selectedIcon = destination.selectedIcon,
+                                unselectedIcon = destination.unselectedIcon,
+                                onClick = { onDestinationChange(destination) },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
                     }
                 }
-            }
 
-            BottomBarFab(
-                selected = currentDestination == AppDestinations.POST,
-                onClick = { onDestinationChange(AppDestinations.POST) },
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .offset(y = (-14).dp),
-            )
+                BottomBarFab(
+                    selected = currentDestination == AppDestinations.POST,
+                    onClick = { onDestinationChange(AppDestinations.POST) },
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .offset(y = (-14).dp),
+                )
+            }
         }
     }
 }
@@ -151,7 +162,7 @@ private fun RowScope.BottomBarItem(
                 color = if (selected) {
                     MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
                 } else {
-                    MaterialTheme.colorScheme.surface
+                    Color.Transparent
                 },
                 shape = RoundedCornerShape(16.dp),
             )
