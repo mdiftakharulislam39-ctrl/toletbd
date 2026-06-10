@@ -21,12 +21,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
-import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.FirebaseAuth
 import com.pronaycoding.toletapp.auth.GoogleAuthManager
+import com.pronaycoding.toletapp.ui.add.AddToletScreen
 import com.pronaycoding.toletapp.ui.auth.SignInScreen
+import com.pronaycoding.toletapp.ui.home.HomeScreen
 import com.pronaycoding.toletapp.ui.profile.ProfileScreen
 import com.pronaycoding.toletapp.ui.theme.ToletAppTheme
 import kotlinx.coroutines.launch
@@ -105,14 +105,14 @@ fun ToletAppApp() {
     ) {
         Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
             when (currentDestination) {
-                AppDestinations.HOME -> Greeting(
-                    name = user.displayName ?: "there",
+                AppDestinations.HOME -> HomeScreen(
                     modifier = Modifier.padding(innerPadding),
                 )
 
-                AppDestinations.FAVORITES -> Greeting(
-                    name = "Favorites",
+                AppDestinations.POST -> AddToletScreen(
+                    user = user,
                     modifier = Modifier.padding(innerPadding),
+                    onListingPosted = { currentDestination = AppDestinations.HOME },
                 )
 
                 AppDestinations.PROFILE -> ProfileScreen(
@@ -129,23 +129,7 @@ enum class AppDestinations(
     val label: String,
     val icon: Int,
 ) {
-    HOME("Home", R.drawable.ic_home),
-    FAVORITES("Favorites", R.drawable.ic_favorite),
+    HOME("Search", R.drawable.ic_home),
+    POST("Post", R.drawable.ic_add),
     PROFILE("Profile", R.drawable.ic_account_box),
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier.padding(24.dp),
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    ToletAppTheme {
-        Greeting("Android")
-    }
 }

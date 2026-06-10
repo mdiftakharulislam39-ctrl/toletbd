@@ -6,4 +6,19 @@
     <string name="sign_in_with_google">Sign in with Google</string>
     <string name="sign_out">Sign out</string>
     <string name="profile_title">Profile</string>
+    <string name="search_title">Find a To-Let</string>
+    <string name="location_hint">Location</string>
+    <string name="location_placeholder">e.g. Dhanmondi, Gulshan</string>
+    <string name="search_button">Search</string>
+    <string name="no_listings">No to-let listings found for this location.</string>
+    <string name="results_count">%1$d result(s) found</string>
+    <string name="post_tolet_title">Post a To-Let</string>
+    <string name="title_hint">Title</string>
+    <string name="description_hint">Description</string>
+    <string name="price_hint">Rent (৳/month)</string>
+    <string name="bedrooms_hint">Bedrooms</string>
+    <string name="property_type_hint">Property type</string>
+    <string name="images_label">Images (%1$d/%2$d)</string>
+    <string name="add_images">Add images (max 2)</string>
+    <string name="post_listing">Post listing</string>
 </resources>
