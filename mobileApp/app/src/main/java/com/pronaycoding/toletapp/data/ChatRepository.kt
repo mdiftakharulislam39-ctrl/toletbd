@@ -18,15 +18,16 @@ class ChatRepository(
 ) {
     suspend fun getMessages(currentUserId: String, otherUserId: String): Result<List<ChatMessage>> {
         return try {
-            val chatId = chatId(currentUserId, otherUserId)
-            val snapshot = database.getReference("chats").child(chatId).child("messages").get().await()
+            val id = chatId(currentUserId, otherUserId)
+            ensureUserChatIndex(currentUserId, otherUserId, id)
+            val snapshot = database.getReference("chats").child(id).child("messages").get().await()
             val messages = snapshot.children.mapNotNull { child ->
                 val data = child.children.associate { it.key!! to it.value }
                 ChatMessage.fromMap(child.key!!, data)
             }.sortedBy { it.timestamp }
             Result.success(messages)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(mapErrorMessage(e), e))
         }
     }
 
@@ -36,10 +37,11 @@ class ChatRepository(
         text: String,
     ): Result<Unit> {
         return try {
-            val chatId = chatId(currentUserId, otherUserId)
-            val chatRef = database.getReference("chats").child(chatId)
+            val id = chatId(currentUserId, otherUserId)
+            val chatRef = database.getReference("chats").child(id)
             chatRef.child("participants").child(currentUserId).setValue(true).await()
             chatRef.child("participants").child(otherUserId).setValue(true).await()
+            ensureUserChatIndex(currentUserId, otherUserId, id)
 
             val messageRef = chatRef.child("messages").push()
             val message = ChatMessage(
@@ -51,20 +53,26 @@ class ChatRepository(
             messageRef.setValue(message.toMap()).await()
             Result.success(Unit)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(mapErrorMessage(e), e))
         }
     }
 
     suspend fun getConversations(currentUserId: String): Result<List<ChatConversation>> {
         return try {
-            val snapshot = database.getReference("chats").get().await()
-            val conversations = snapshot.children.mapNotNull { chatChild ->
-                val participantIds = chatChild.child("participants").children.mapNotNull { it.key }
-                if (!participantIds.contains(currentUserId)) return@mapNotNull null
+            val chatIdsSnapshot = database.getReference("userChats")
+                .child(currentUserId)
+                .get()
+                .await()
+            val conversations = chatIdsSnapshot.children.mapNotNull { chatIdChild ->
+                val id = chatIdChild.key ?: return@mapNotNull null
+                val chatSnapshot = database.getReference("chats").child(id).get().await()
+                if (!chatSnapshot.exists()) return@mapNotNull null
+
+                val participantIds = chatSnapshot.child("participants").children.mapNotNull { it.key }
                 val otherUserId = participantIds.firstOrNull { it != currentUserId } ?: return@mapNotNull null
 
                 var lastMessage: ChatMessage? = null
-                for (msgChild in chatChild.child("messages").children) {
+                for (msgChild in chatSnapshot.child("messages").children) {
                     val data = msgChild.children.associate { it.key!! to it.value }
                     val message = ChatMessage.fromMap(msgChild.key!!, data)
                     if (lastMessage == null || message.timestamp > lastMessage.timestamp) {
@@ -76,11 +84,31 @@ class ChatRepository(
             }.sortedByDescending { it.lastMessage?.timestamp ?: 0L }
             Result.success(conversations)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(mapErrorMessage(e), e))
         }
     }
 
     fun chatId(userId1: String, userId2: String): String {
         return listOf(userId1, userId2).sorted().joinToString("_")
+    }
+
+    private suspend fun ensureUserChatIndex(
+        currentUserId: String,
+        otherUserId: String,
+        id: String,
+    ) {
+        database.getReference("userChats").child(currentUserId).child(id).setValue(true).await()
+        database.getReference("userChats").child(otherUserId).child(id).setValue(true).await()
+    }
+
+    private fun mapErrorMessage(e: Exception): String {
+        val message = e.message.orEmpty()
+        return when {
+            message.contains("PERMISSION_DENIED", ignoreCase = true) ||
+                message.contains("permission_denied", ignoreCase = true) ->
+                "Permission denied. Add chat rules in Firebase Console (see database.rules.json)."
+
+            else -> message.ifBlank { "Chat request failed." }
+        }
     }
 }

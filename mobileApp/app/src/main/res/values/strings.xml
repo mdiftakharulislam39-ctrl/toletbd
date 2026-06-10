@@ -37,4 +37,16 @@
     <string name="new_chat">New chat</string>
     <string name="new_chat_phone_hint">Phone number</string>
     <string name="start_chat">Start chat</string>
+    <string name="view_my_listings">View All my tolet post</string>
+    <string name="my_listings_title">My To-Let Posts</string>
+    <string name="no_my_listings">You have not posted any to-lets yet.</string>
+    <string name="edit_listing">Edit</string>
+    <string name="delete_listing">Delete</string>
+    <string name="delete_listing_confirm">Are you sure you want to delete \"%1$s\"? This cannot be undone.</string>
+    <string name="edit_tolet_title">Edit To-Let</string>
+    <string name="save_listing_changes">Save changes</string>
+    <string name="remove_image">Remove image</string>
+    <string name="profile_email">Email</string>
+    <string name="profile_phone">Phone</string>
+    <string name="profile_user_id">User ID</string>
 </resources>

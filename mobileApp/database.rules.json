@@ -1,0 +1,45 @@
+{
+  "rules": {
+    "tolets": {
+      ".read": "auth != null",
+      "$listingId": {
+        ".write": "auth != null && (!data.exists() || data.child('userId').val() === auth.uid)"
+      }
+    },
+    "users": {
+      ".read": "auth != null",
+      "$userId": {
+        ".write": "auth != null && auth.uid === $userId"
+      }
+    },
+    "savedTolets": {
+      "$userId": {
+        ".read": "auth != null && auth.uid === $userId",
+        ".write": "auth != null && auth.uid === $userId"
+      }
+    },
+    "userChats": {
+      "$userId": {
+        ".read": "auth != null && auth.uid === $userId",
+        "$chatId": {
+          ".write": "auth != null"
+        }
+      }
+    },
+    "chats": {
+      "$chatId": {
+        ".read": "auth != null && data.child('participants').child(auth.uid).val() === true",
+        "participants": {
+          ".read": "auth != null && data.child(auth.uid).val() === true",
+          ".write": "auth != null"
+        },
+        "messages": {
+          ".read": "auth != null && root.child('chats').child($chatId).child('participants').child(auth.uid).val() === true",
+          "$messageId": {
+            ".write": "auth != null && root.child('chats').child($chatId).child('participants').child(auth.uid).val() === true && newData.child('senderId').val() === auth.uid"
+          }
+        }
+      }
+    }
+  }
+}
