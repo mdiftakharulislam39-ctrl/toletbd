@@ -63,6 +63,27 @@ class ToletRepository(
 
     suspend fun getAllListings(): Result<List<ToletListing>> = fetchAllListings()
 
+    suspend fun getListingById(listingId: String): Result<ToletListing> {
+        return try {
+            val snapshot = listingsRef.child(listingId).get().await()
+            if (!snapshot.exists()) {
+                Result.failure(IllegalStateException("Listing not found."))
+            } else {
+                val data = snapshot.children.associate { it.key!! to it.value }
+                Result.success(ToletListing.fromMap(snapshot.key!!, data))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception(mapErrorMessage(e), e))
+        }
+    }
+
+    suspend fun getListingsByIds(ids: List<String>): Result<List<ToletListing>> {
+        return fetchAllListings().map { listings ->
+            val idSet = ids.toSet()
+            listings.filter { it.id in idSet }
+        }
+    }
+
     private suspend fun fetchAllListings(): Result<List<ToletListing>> {
         return try {
             val snapshot = listingsRef.get().await()

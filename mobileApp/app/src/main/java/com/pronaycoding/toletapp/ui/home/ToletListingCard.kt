@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,12 +23,15 @@ import coil.compose.AsyncImage
 import com.pronaycoding.toletapp.data.ImageEncoder
 import com.pronaycoding.toletapp.data.model.ToletListing
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ToletListingCard(
     listing: ToletListing,
+    onClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Card(
+        onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {

@@ -21,4 +21,14 @@
     <string name="images_label">Images (%1$d/%2$d)</string>
     <string name="add_images">Add images (max 2)</string>
     <string name="post_listing">Post listing</string>
+    <string name="phone_required_title">Add your phone number</string>
+    <string name="phone_required_subtitle">A phone number is required to use toletApp. You cannot skip this step.</string>
+    <string name="phone_hint">Phone number</string>
+    <string name="phone_placeholder">e.g. 01712345678</string>
+    <string name="save_phone">Continue</string>
+    <string name="posted_by">Posted by</string>
+    <string name="chat_with_poster">Chat with poster</string>
+    <string name="save_listing">Save listing</string>
+    <string name="saved_title">Saved To-Lets</string>
+    <string name="no_saved_listings">You have not saved any to-lets yet.</string>
 </resources>
