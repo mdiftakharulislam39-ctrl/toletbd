@@ -1,14 +1,17 @@
 <resources>
     <string name="app_name">toletApp</string>
     <string name="google_web_client_id">YOUR_WEB_CLIENT_ID</string>
+    <string name="sign_in_brand">ToletBD</string>
+    <string name="sign_in_tagline">Find your space</string>
     <string name="sign_in_title">Find your next home</string>
     <string name="sign_in_subtitle">Browse to-let listings across Bangladesh and connect with owners in minutes.</string>
     <string name="sign_in_with_google">Continue with Google</string>
-    <string name="sign_in_feature_search">Search rentals by location</string>
-    <string name="sign_in_feature_post">Post your own to-let listings</string>
-    <string name="sign_in_feature_chat">Chat directly with owners</string>
-    <string name="sign_in_footer">By continuing, you agree to use your Google account to sign in securely.</string>
     <string name="sign_out">Sign out</string>
+    <string name="delete_account">Delete account</string>
+    <string name="delete_account_confirm_title">Delete account?</string>
+    <string name="delete_account_confirm_message">This permanently deletes your profile, listings, saved to-lets, and chats. You will be asked to confirm with Google. This cannot be undone.</string>
+    <string name="delete_account_failed">Failed to delete account. Please try again.</string>
+    <string name="deleting_account">Deleting account…</string>
     <string name="profile_title">Profile</string>
     <string name="search_title">Find a To-Let</string>
     <string name="location_hint">Location</string>
@@ -25,11 +28,8 @@
     <string name="images_label">Images (%1$d/%2$d)</string>
     <string name="add_images">Add images (max 2)</string>
     <string name="post_listing">Post listing</string>
-    <string name="phone_required_title">One last step</string>
-    <string name="phone_required_subtitle">Add your phone number so owners and renters can reach you.</string>
-    <string name="phone_required_subtitle_named">Hi %1$s, add your phone number so others can reach you.</string>
-    <string name="phone_step_label">Step 2 of 2</string>
-    <string name="phone_card_hint">We use your number for chat and listing contact only.</string>
+    <string name="phone_required_title">Your number</string>
+    <string name="phone_required_subtitle">So others can reach you</string>
     <string name="phone_country_code">+880</string>
     <string name="phone_privacy_note">Your number is shared only when you post a listing or start a chat.</string>
     <string name="phone_invalid">Enter a valid Bangladesh phone number.</string>

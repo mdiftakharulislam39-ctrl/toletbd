@@ -1,32 +1,26 @@
-package com.pronaycoding.toletapp.data
+package com.pronaycoding.toletapp.data.repository
 
 import android.content.Context
 import android.net.Uri
-import com.google.firebase.FirebaseApp
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.FirebaseDatabase
+import com.pronaycoding.toletapp.data.ImageEncoder
 import com.pronaycoding.toletapp.data.model.ToletListing
+import com.pronaycoding.toletapp.domain.repository.ToletRepository
 import kotlinx.coroutines.tasks.await
 
-class ToletRepository(
-    private val database: FirebaseDatabase = run {
-        val url = FirebaseApp.getInstance().options.databaseUrl
-        if (!url.isNullOrBlank()) {
-            FirebaseDatabase.getInstance(url)
-        } else {
-            FirebaseDatabase.getInstance("https://toletapp-6eb8e-default-rtdb.firebaseio.com")
-        }
-    },
-) {
+class ToletRepositoryImpl(
+    private val database: FirebaseDatabase,
+) : ToletRepository {
     private val listingsRef get() = database.getReference(PATH)
 
-    suspend fun createListing(
+    override suspend fun createListing(
         context: Context,
         listing: ToletListing,
         imageUris: List<Uri>,
     ): Result<String> {
-        if (imageUris.size > MAX_IMAGES) {
-            return Result.failure(IllegalArgumentException("Maximum $MAX_IMAGES images allowed."))
+        if (imageUris.size > ToletRepository.MAX_IMAGES) {
+            return Result.failure(IllegalArgumentException("Maximum ${ToletRepository.MAX_IMAGES} images allowed."))
         }
 
         return try {
@@ -46,7 +40,7 @@ class ToletRepository(
         }
     }
 
-    suspend fun searchByLocation(query: String): Result<List<ToletListing>> {
+    override suspend fun searchByLocation(query: String): Result<List<ToletListing>> {
         val trimmed = query.trim()
         return fetchAllListings().map { listings ->
             if (trimmed.isBlank()) {
@@ -61,9 +55,9 @@ class ToletRepository(
         }
     }
 
-    suspend fun getAllListings(): Result<List<ToletListing>> = fetchAllListings()
+    override suspend fun getAllListings(): Result<List<ToletListing>> = fetchAllListings()
 
-    suspend fun getListingById(listingId: String): Result<ToletListing> {
+    override suspend fun getListingById(listingId: String): Result<ToletListing> {
         return try {
             val snapshot = listingsRef.child(listingId).get().await()
             if (!snapshot.exists()) {
@@ -77,26 +71,26 @@ class ToletRepository(
         }
     }
 
-    suspend fun getListingsByIds(ids: List<String>): Result<List<ToletListing>> {
+    override suspend fun getListingsByIds(ids: List<String>): Result<List<ToletListing>> {
         return fetchAllListings().map { listings ->
             val idSet = ids.toSet()
             listings.filter { it.id in idSet }
         }
     }
 
-    suspend fun getListingsByUserId(userId: String): Result<List<ToletListing>> {
+    override suspend fun getListingsByUserId(userId: String): Result<List<ToletListing>> {
         return fetchAllListings().map { listings ->
             listings.filter { it.userId == userId }
         }
     }
 
-    suspend fun updateListing(
+    override suspend fun updateListing(
         context: Context,
         listing: ToletListing,
         newImageUris: List<Uri>,
     ): Result<Unit> {
-        if (listing.images.size + newImageUris.size > MAX_IMAGES) {
-            return Result.failure(IllegalArgumentException("Maximum $MAX_IMAGES images allowed."))
+        if (listing.images.size + newImageUris.size > ToletRepository.MAX_IMAGES) {
+            return Result.failure(IllegalArgumentException("Maximum ${ToletRepository.MAX_IMAGES} images allowed."))
         }
 
         return try {
@@ -109,7 +103,7 @@ class ToletRepository(
         }
     }
 
-    suspend fun deleteListing(listingId: String): Result<Unit> {
+    override suspend fun deleteListing(listingId: String): Result<Unit> {
         return try {
             listingsRef.child(listingId).removeValue().await()
             Result.success(Unit)
@@ -155,6 +149,5 @@ class ToletRepository(
 
     companion object {
         private const val PATH = "tolets"
-        const val MAX_IMAGES = 2
     }
 }

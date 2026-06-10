@@ -1,25 +1,18 @@
-package com.pronaycoding.toletapp.data
+package com.pronaycoding.toletapp.data.repository
 
-import com.google.firebase.FirebaseApp
 import com.google.firebase.database.FirebaseDatabase
 import com.pronaycoding.toletapp.data.model.ChatConversation
 import com.pronaycoding.toletapp.data.model.ChatMessage
+import com.pronaycoding.toletapp.domain.repository.ChatRepository
 import kotlinx.coroutines.tasks.await
 
-class ChatRepository(
-    private val database: FirebaseDatabase = run {
-        val url = FirebaseApp.getInstance().options.databaseUrl
-        if (!url.isNullOrBlank()) {
-            FirebaseDatabase.getInstance(url)
-        } else {
-            FirebaseDatabase.getInstance("https://toletapp-6eb8e-default-rtdb.firebaseio.com")
-        }
-    },
-) {
-    suspend fun getMessages(currentUserId: String, otherUserId: String): Result<List<ChatMessage>> {
+class ChatRepositoryImpl(
+    private val database: FirebaseDatabase,
+) : ChatRepository {
+    override suspend fun getMessages(currentUserId: String, otherUserId: String): Result<List<ChatMessage>> {
         return try {
             val id = chatId(currentUserId, otherUserId)
-            ensureUserChatIndex(currentUserId, otherUserId, id)
+            ensureChatAccess(currentUserId, otherUserId, id)
             val snapshot = database.getReference("chats").child(id).child("messages").get().await()
             val messages = snapshot.children.mapNotNull { child ->
                 val data = child.children.associate { it.key!! to it.value }
@@ -31,17 +24,15 @@ class ChatRepository(
         }
     }
 
-    suspend fun sendMessage(
+    override suspend fun sendMessage(
         currentUserId: String,
         otherUserId: String,
         text: String,
     ): Result<Unit> {
         return try {
             val id = chatId(currentUserId, otherUserId)
+            ensureChatAccess(currentUserId, otherUserId, id)
             val chatRef = database.getReference("chats").child(id)
-            chatRef.child("participants").child(currentUserId).setValue(true).await()
-            chatRef.child("participants").child(otherUserId).setValue(true).await()
-            ensureUserChatIndex(currentUserId, otherUserId, id)
 
             val messageRef = chatRef.child("messages").push()
             val message = ChatMessage(
@@ -57,7 +48,7 @@ class ChatRepository(
         }
     }
 
-    suspend fun getConversations(currentUserId: String): Result<List<ChatConversation>> {
+    override suspend fun getConversations(currentUserId: String): Result<List<ChatConversation>> {
         return try {
             val chatIdsSnapshot = database.getReference("userChats")
                 .child(currentUserId)
@@ -88,15 +79,18 @@ class ChatRepository(
         }
     }
 
-    fun chatId(userId1: String, userId2: String): String {
+    override fun chatId(userId1: String, userId2: String): String {
         return listOf(userId1, userId2).sorted().joinToString("_")
     }
 
-    private suspend fun ensureUserChatIndex(
+    private suspend fun ensureChatAccess(
         currentUserId: String,
         otherUserId: String,
         id: String,
     ) {
+        val chatRef = database.getReference("chats").child(id)
+        chatRef.child("participants").child(currentUserId).setValue(true).await()
+        chatRef.child("participants").child(otherUserId).setValue(true).await()
         database.getReference("userChats").child(currentUserId).child(id).setValue(true).await()
         database.getReference("userChats").child(otherUserId).child(id).setValue(true).await()
     }

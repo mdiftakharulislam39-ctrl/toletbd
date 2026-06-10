@@ -13,25 +13,20 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.pronaycoding.toletapp.auth.GoogleAuthManager
 import com.pronaycoding.toletapp.data.model.ToletListing
 import com.pronaycoding.toletapp.data.model.UserProfile
-import com.pronaycoding.toletapp.data.UserRepository
 import com.pronaycoding.toletapp.ui.add.AddToletScreen
 import com.pronaycoding.toletapp.ui.auth.SignInScreen
 import com.pronaycoding.toletapp.ui.chat.ChatListScreen
@@ -43,8 +38,9 @@ import com.pronaycoding.toletapp.ui.navigation.rememberAppNavigator
 import com.pronaycoding.toletapp.ui.phone.PhoneNumberScreen
 import com.pronaycoding.toletapp.ui.profile.ProfileScreen
 import com.pronaycoding.toletapp.ui.saved.SavedScreen
+import com.pronaycoding.toletapp.ui.session.SessionViewModel
 import com.pronaycoding.toletapp.ui.theme.ToletAppTheme
-import kotlinx.coroutines.launch
+import org.koin.compose.viewmodel.koinViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,60 +56,32 @@ class MainActivity : ComponentActivity() {
 
 @PreviewScreenSizes
 @Composable
-fun ToletAppApp() {
-    val context = LocalContext.current
-    val authManager = remember { GoogleAuthManager(context) }
-    val userRepository = remember { UserRepository() }
-    val coroutineScope = rememberCoroutineScope()
+fun ToletAppApp(
+    sessionViewModel: SessionViewModel = koinViewModel(),
+) {
+    val sessionState by sessionViewModel.uiState.collectAsState()
     val navigator = rememberAppNavigator()
-
-    var currentUser by remember { mutableStateOf(FirebaseAuth.getInstance().currentUser) }
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
-    var isSigningIn by rememberSaveable { mutableStateOf(false) }
-    var signInError by rememberSaveable { mutableStateOf<String?>(null) }
-    var hasPhone by remember { mutableStateOf<Boolean?>(null) }
     var profileHasSubRoute by remember { mutableStateOf(false) }
 
-    DisposableEffect(Unit) {
-        val listener = FirebaseAuth.AuthStateListener { auth ->
-            currentUser = auth.currentUser
-            if (auth.currentUser == null) {
-                navigator.clearOverlays()
-            }
-        }
-        FirebaseAuth.getInstance().addAuthStateListener(listener)
-        onDispose {
-            FirebaseAuth.getInstance().removeAuthStateListener(listener)
+    LaunchedEffect(sessionState.currentUser) {
+        if (sessionState.currentUser == null) {
+            navigator.clearOverlays()
         }
     }
 
-    val user = currentUser
+    val user = sessionState.currentUser
     if (user == null) {
         SignInScreen(
-            isLoading = isSigningIn,
-            errorMessage = signInError,
-            onSignInClick = {
-                coroutineScope.launch {
-                    isSigningIn = true
-                    signInError = null
-                    authManager.signInWithGoogle()
-                        .onSuccess { signInError = null }
-                        .onFailure { error ->
-                            signInError = error.message ?: "Sign in failed."
-                        }
-                    isSigningIn = false
-                }
-            },
+            isLoading = sessionState.isSigningIn,
+            errorMessage = sessionState.signInError,
+            onSignInClick = sessionViewModel::signIn,
         )
         return
     }
 
-    LaunchedEffect(user.uid) {
-        hasPhone = userRepository.hasPhoneNumber(user.uid)
-    }
-
     when {
-        hasPhone == null -> {
+        sessionState.hasPhone == null -> {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
@@ -122,11 +90,10 @@ fun ToletAppApp() {
             }
         }
 
-        hasPhone == false -> {
+        sessionState.hasPhone == false -> {
             PhoneNumberScreen(
                 user = user,
-                userRepository = userRepository,
-                onPhoneSaved = { hasPhone = true },
+                onPhoneSaved = sessionViewModel::onPhoneSaved,
             )
         }
 
@@ -148,7 +115,8 @@ fun ToletAppApp() {
                 onChatClick = navigator::openChat,
                 profileHasSubRoute = profileHasSubRoute,
                 onProfileSubRouteChange = { profileHasSubRoute = it },
-                onSignOut = { authManager.signOut() },
+                onSignOut = sessionViewModel::signOut,
+                onDeleteAccount = sessionViewModel::deleteAccount,
             )
         }
     }
@@ -164,6 +132,7 @@ private fun MainNavigation(
     profileHasSubRoute: Boolean,
     onProfileSubRouteChange: (Boolean) -> Unit,
     onSignOut: () -> Unit,
+    onDeleteAccount: suspend () -> Result<Unit>,
 ) {
     val shouldHandleTabBack = currentDestination != AppDestinations.HOME &&
         !(currentDestination == AppDestinations.PROFILE && profileHasSubRoute)
@@ -187,35 +156,40 @@ private fun MainNavigation(
                 )
             },
         ) { innerPadding ->
+            val tabModifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = innerPadding.calculateBottomPadding())
+
             when (currentDestination) {
                 AppDestinations.HOME -> HomeScreen(
                     onListingClick = onListingClick,
-                    modifier = Modifier.padding(innerPadding),
+                    modifier = tabModifier,
                 )
 
                 AppDestinations.POST -> AddToletScreen(
                     user = user,
-                    modifier = Modifier.padding(innerPadding),
+                    modifier = tabModifier,
                     onListingPosted = { onDestinationChange(AppDestinations.HOME) },
                 )
 
                 AppDestinations.SAVED -> SavedScreen(
                     user = user,
                     onListingClick = onListingClick,
-                    modifier = Modifier.padding(innerPadding),
+                    modifier = tabModifier,
                 )
 
                 AppDestinations.CHAT -> ChatListScreen(
                     user = user,
                     onChatClick = onChatClick,
-                    modifier = Modifier.padding(innerPadding),
+                    modifier = tabModifier,
                 )
 
                 AppDestinations.PROFILE -> ProfileScreen(
                     user = user,
                     onSignOutClick = onSignOut,
+                    onDeleteAccount = onDeleteAccount,
                     onSubRouteChange = onProfileSubRouteChange,
-                    modifier = Modifier.padding(innerPadding),
+                    modifier = tabModifier,
                 )
             }
         }

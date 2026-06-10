@@ -24,22 +24,18 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.FirebaseUser
 import com.pronaycoding.toletapp.R
-import com.pronaycoding.toletapp.data.ToletRepository
 import com.pronaycoding.toletapp.data.model.ToletListing
 import com.pronaycoding.toletapp.ui.home.ToletListingCard
-import kotlinx.coroutines.launch
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,29 +44,9 @@ fun MyListingsScreen(
     onBack: () -> Unit,
     onEditListing: (ToletListing) -> Unit,
     modifier: Modifier = Modifier,
-    toletRepository: ToletRepository = remember { ToletRepository() },
+    viewModel: MyListingsViewModel = koinViewModel { parametersOf(user.uid) },
 ) {
-    var listings by remember { mutableStateOf<List<ToletListing>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    var listingToDelete by remember { mutableStateOf<ToletListing?>(null) }
-    var isDeleting by remember { mutableStateOf(false) }
-    val coroutineScope = rememberCoroutineScope()
-
-    fun loadListings() {
-        coroutineScope.launch {
-            isLoading = true
-            errorMessage = null
-            toletRepository.getListingsByUserId(user.uid)
-                .onSuccess { listings = it }
-                .onFailure { errorMessage = it.message }
-            isLoading = false
-        }
-    }
-
-    LaunchedEffect(user.uid) {
-        loadListings()
-    }
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         modifier = modifier,
@@ -92,7 +68,7 @@ fun MyListingsScreen(
                 .padding(horizontal = 16.dp),
         ) {
             when {
-                isLoading -> {
+                uiState.isLoading -> {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center,
@@ -101,15 +77,15 @@ fun MyListingsScreen(
                     }
                 }
 
-                errorMessage != null -> {
+                uiState.errorMessage != null -> {
                     Text(
-                        text = errorMessage!!,
+                        text = uiState.errorMessage!!,
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(top = 16.dp),
                     )
                 }
 
-                listings.isEmpty() -> {
+                uiState.listings.isEmpty() -> {
                     Text(
                         text = stringResource(R.string.no_my_listings),
                         style = MaterialTheme.typography.bodyLarge,
@@ -124,7 +100,7 @@ fun MyListingsScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         contentPadding = PaddingValues(bottom = 16.dp),
                     ) {
-                        items(listings, key = { it.id }) { listing ->
+                        items(uiState.listings, key = { it.id }) { listing ->
                             Column {
                                 ToletListingCard(listing = listing)
                                 Row(
@@ -140,7 +116,7 @@ fun MyListingsScreen(
                                         Text(stringResource(R.string.edit_listing))
                                     }
                                     OutlinedButton(
-                                        onClick = { listingToDelete = listing },
+                                        onClick = { viewModel.showDeleteDialog(listing) },
                                         modifier = Modifier.weight(1f),
                                     ) {
                                         Text(
@@ -157,27 +133,15 @@ fun MyListingsScreen(
         }
     }
 
-    listingToDelete?.let { listing ->
+    uiState.listingToDelete?.let { listing ->
         AlertDialog(
-            onDismissRequest = { if (!isDeleting) listingToDelete = null },
+            onDismissRequest = viewModel::dismissDeleteDialog,
             title = { Text(stringResource(R.string.delete_listing)) },
             text = { Text(stringResource(R.string.delete_listing_confirm, listing.title)) },
             confirmButton = {
                 TextButton(
-                    onClick = {
-                        if (isDeleting) return@TextButton
-                        coroutineScope.launch {
-                            isDeleting = true
-                            toletRepository.deleteListing(listing.id)
-                                .onSuccess {
-                                    listingToDelete = null
-                                    loadListings()
-                                }
-                                .onFailure { errorMessage = it.message }
-                            isDeleting = false
-                        }
-                    },
-                    enabled = !isDeleting,
+                    onClick = viewModel::confirmDelete,
+                    enabled = !uiState.isDeleting,
                 ) {
                     Text(
                         text = stringResource(R.string.delete_listing),
@@ -187,8 +151,8 @@ fun MyListingsScreen(
             },
             dismissButton = {
                 TextButton(
-                    onClick = { listingToDelete = null },
-                    enabled = !isDeleting,
+                    onClick = viewModel::dismissDeleteDialog,
+                    enabled = !uiState.isDeleting,
                 ) {
                     Text(stringResource(android.R.string.cancel))
                 }

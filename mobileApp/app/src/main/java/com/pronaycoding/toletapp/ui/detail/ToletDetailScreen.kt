@@ -23,17 +23,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,12 +39,11 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseUser
 import com.pronaycoding.toletapp.R
-import com.pronaycoding.toletapp.data.ToletRepository
-import com.pronaycoding.toletapp.data.UserRepository
 import com.pronaycoding.toletapp.data.model.ToletListing
 import com.pronaycoding.toletapp.data.model.UserProfile
 import com.pronaycoding.toletapp.ui.common.ListingImage
-import kotlinx.coroutines.launch
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,51 +53,26 @@ fun ToletDetailScreen(
     onBack: () -> Unit,
     onChatClick: (UserProfile) -> Unit,
     modifier: Modifier = Modifier,
-    userRepository: UserRepository = remember { UserRepository() },
+    viewModel: ListingDetailViewModel = koinViewModel { parametersOf(listing, currentUser.uid) },
 ) {
-    var poster by remember { mutableStateOf<UserProfile?>(null) }
-    var isSaved by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(true) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    val coroutineScope = rememberCoroutineScope()
-
-    LaunchedEffect(listing.userId, listing.id) {
-        isLoading = true
-        userRepository.getUserProfile(listing.userId)
-            .onSuccess { poster = it }
-            .onFailure { errorMessage = it.message }
-        isSaved = userRepository.isListingSaved(currentUser.uid, listing.id)
-        isLoading = false
-    }
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text(listing.title) },
+                title = { Text("To-Let Details") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
-                    IconButton(
-                        onClick = {
-                            coroutineScope.launch {
-                                if (isSaved) {
-                                    userRepository.unsaveListing(currentUser.uid, listing.id)
-                                        .onSuccess { isSaved = false }
-                                } else {
-                                    userRepository.saveListing(currentUser.uid, listing.id)
-                                        .onSuccess { isSaved = true }
-                                }
-                            }
-                        },
-                    ) {
+                    IconButton(onClick = viewModel::toggleSaved) {
                         Icon(
-                            imageVector = if (isSaved) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                            imageVector = if (uiState.isSaved) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                             contentDescription = stringResource(R.string.save_listing),
-                            tint = if (isSaved) {
+                            tint = if (uiState.isSaved) {
                                 MaterialTheme.colorScheme.primary
                             } else {
                                 MaterialTheme.colorScheme.onSurface
@@ -114,7 +83,7 @@ fun ToletDetailScreen(
             )
         },
     ) { innerPadding ->
-        if (isLoading) {
+        if (uiState.isLoading) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -187,7 +156,7 @@ fun ToletDetailScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            poster?.let { profile ->
+            uiState.poster?.let { profile ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (profile.photoUrl.isNotBlank()) {
                         AsyncImage(
@@ -227,7 +196,7 @@ fun ToletDetailScreen(
                     text = listing.userName,
                     style = MaterialTheme.typography.bodyLarge,
                 )
-                errorMessage?.let {
+                uiState.errorMessage?.let {
                     Text(
                         text = it,
                         color = MaterialTheme.colorScheme.error,

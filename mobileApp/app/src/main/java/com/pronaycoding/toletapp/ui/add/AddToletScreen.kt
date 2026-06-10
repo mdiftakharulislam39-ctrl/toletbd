@@ -1,6 +1,5 @@
 package com.pronaycoding.toletapp.ui.add
 
-import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -12,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -33,11 +33,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,63 +45,42 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.google.firebase.auth.FirebaseUser
 import com.pronaycoding.toletapp.R
-import com.pronaycoding.toletapp.data.ToletRepository
 import com.pronaycoding.toletapp.data.model.ToletListing
+import com.pronaycoding.toletapp.domain.repository.ToletRepository
 import com.pronaycoding.toletapp.ui.common.ListingImage
-import kotlinx.coroutines.launch
-
-private val propertyTypes = listOf("Flat", "House", "Room", "Office")
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddToletScreen(
     user: FirebaseUser,
     modifier: Modifier = Modifier,
-    repository: ToletRepository = remember { ToletRepository() },
     listingToEdit: ToletListing? = null,
     onListingPosted: () -> Unit = {},
     onBack: (() -> Unit)? = null,
+    viewModel: AddToletViewModel = koinViewModel { parametersOf(user, listingToEdit) },
 ) {
-    val isEditMode = listingToEdit != null
-
-    var title by remember(listingToEdit) { mutableStateOf(listingToEdit?.title.orEmpty()) }
-    var description by remember(listingToEdit) { mutableStateOf(listingToEdit?.description.orEmpty()) }
-    var location by remember(listingToEdit) { mutableStateOf(listingToEdit?.location.orEmpty()) }
-    var price by remember(listingToEdit) { mutableStateOf(listingToEdit?.price.orEmpty()) }
-    var bedrooms by remember(listingToEdit) { mutableStateOf(listingToEdit?.bedrooms.orEmpty()) }
-    var propertyType by remember(listingToEdit) {
-        mutableStateOf(listingToEdit?.propertyType?.takeIf { it in propertyTypes } ?: propertyTypes.first())
-    }
-    var propertyTypeExpanded by remember { mutableStateOf(false) }
-    var existingImages by remember(listingToEdit) {
-        mutableStateOf(listingToEdit?.images.orEmpty())
-    }
-    var selectedImages by remember { mutableStateOf<List<Uri>>(emptyList()) }
-    var isSubmitting by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    var successMessage by remember { mutableStateOf<String?>(null) }
-    val coroutineScope = rememberCoroutineScope()
+    val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    val totalImageCount = existingImages.size + selectedImages.size
-    val remainingImageSlots = ToletRepository.MAX_IMAGES - totalImageCount
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(ToletRepository.MAX_IMAGES),
     ) { uris ->
-        selectedImages = (selectedImages + uris).take(remainingImageSlots.coerceAtLeast(0))
+        viewModel.addSelectedImages(uris)
     }
 
     val formContent: @Composable () -> Unit = {
         Text(
             text = stringResource(
-                if (isEditMode) R.string.edit_tolet_title else R.string.post_tolet_title,
+                if (viewModel.isEditMode) R.string.edit_tolet_title else R.string.post_tolet_title,
             ),
             style = MaterialTheme.typography.headlineSmall,
         )
 
         OutlinedTextField(
-            value = title,
-            onValueChange = { title = it },
+            value = uiState.title,
+            onValueChange = viewModel::onTitleChange,
             label = { Text(stringResource(R.string.title_hint)) },
             modifier = Modifier
                 .fillMaxWidth()
@@ -113,8 +89,8 @@ fun AddToletScreen(
         )
 
         OutlinedTextField(
-            value = description,
-            onValueChange = { description = it },
+            value = uiState.description,
+            onValueChange = viewModel::onDescriptionChange,
             label = { Text(stringResource(R.string.description_hint)) },
             modifier = Modifier
                 .fillMaxWidth()
@@ -123,8 +99,8 @@ fun AddToletScreen(
         )
 
         OutlinedTextField(
-            value = location,
-            onValueChange = { location = it },
+            value = uiState.location,
+            onValueChange = viewModel::onLocationChange,
             label = { Text(stringResource(R.string.location_hint)) },
             placeholder = { Text(stringResource(R.string.location_placeholder)) },
             modifier = Modifier
@@ -140,16 +116,16 @@ fun AddToletScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             OutlinedTextField(
-                value = price,
-                onValueChange = { price = it },
+                value = uiState.price,
+                onValueChange = viewModel::onPriceChange,
                 label = { Text(stringResource(R.string.price_hint)) },
                 modifier = Modifier.weight(1f),
                 singleLine = true,
             )
 
             OutlinedTextField(
-                value = bedrooms,
-                onValueChange = { bedrooms = it },
+                value = uiState.bedrooms,
+                onValueChange = viewModel::onBedroomsChange,
                 label = { Text(stringResource(R.string.bedrooms_hint)) },
                 modifier = Modifier.weight(1f),
                 singleLine = true,
@@ -157,32 +133,32 @@ fun AddToletScreen(
         }
 
         ExposedDropdownMenuBox(
-            expanded = propertyTypeExpanded,
-            onExpandedChange = { propertyTypeExpanded = it },
+            expanded = uiState.propertyTypeExpanded,
+            onExpandedChange = viewModel::onPropertyTypeExpandedChange,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 12.dp),
         ) {
             OutlinedTextField(
-                value = propertyType,
+                value = uiState.propertyType,
                 onValueChange = {},
                 readOnly = true,
                 label = { Text(stringResource(R.string.property_type_hint)) },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = propertyTypeExpanded) },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = uiState.propertyTypeExpanded) },
                 modifier = Modifier
                     .menuAnchor()
                     .fillMaxWidth(),
             )
             ExposedDropdownMenu(
-                expanded = propertyTypeExpanded,
-                onDismissRequest = { propertyTypeExpanded = false },
+                expanded = uiState.propertyTypeExpanded,
+                onDismissRequest = { viewModel.onPropertyTypeExpandedChange(false) },
             ) {
                 propertyTypes.forEach { type ->
                     DropdownMenuItem(
                         text = { Text(type) },
                         onClick = {
-                            propertyType = type
-                            propertyTypeExpanded = false
+                            viewModel.onPropertyTypeChange(type)
+                            viewModel.onPropertyTypeExpandedChange(false)
                         },
                     )
                 }
@@ -190,7 +166,7 @@ fun AddToletScreen(
         }
 
         Text(
-            text = stringResource(R.string.images_label, totalImageCount, ToletRepository.MAX_IMAGES),
+            text = stringResource(R.string.images_label, uiState.totalImageCount, ToletRepository.MAX_IMAGES),
             style = MaterialTheme.typography.labelLarge,
             modifier = Modifier.padding(top = 16.dp),
         )
@@ -201,7 +177,7 @@ fun AddToletScreen(
                 .padding(top = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            existingImages.forEachIndexed { index, imageData ->
+            uiState.existingImages.forEachIndexed { index, imageData ->
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -216,9 +192,9 @@ fun AddToletScreen(
                             .clip(RoundedCornerShape(8.dp)),
                         contentScale = ContentScale.Crop,
                     )
-                    if (isEditMode) {
+                    if (viewModel.isEditMode) {
                         IconButton(
-                            onClick = { existingImages = existingImages.filterIndexed { i, _ -> i != index } },
+                            onClick = { viewModel.removeExistingImage(index) },
                             modifier = Modifier.align(Alignment.TopEnd),
                         ) {
                             Icon(
@@ -230,7 +206,7 @@ fun AddToletScreen(
                     }
                 }
             }
-            selectedImages.forEachIndexed { index, uri ->
+            uiState.selectedImages.forEachIndexed { index, uri ->
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -246,7 +222,7 @@ fun AddToletScreen(
                         contentScale = ContentScale.Crop,
                     )
                     IconButton(
-                        onClick = { selectedImages = selectedImages.filterIndexed { i, _ -> i != index } },
+                        onClick = { viewModel.removeSelectedImage(index) },
                         modifier = Modifier.align(Alignment.TopEnd),
                     ) {
                         Icon(
@@ -265,7 +241,7 @@ fun AddToletScreen(
                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
                 )
             },
-            enabled = totalImageCount < ToletRepository.MAX_IMAGES,
+            enabled = uiState.totalImageCount < ToletRepository.MAX_IMAGES,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp),
@@ -273,7 +249,7 @@ fun AddToletScreen(
             Text(stringResource(R.string.add_images))
         }
 
-        if (isSubmitting) {
+        if (uiState.isSubmitting) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -284,84 +260,20 @@ fun AddToletScreen(
             }
         } else {
             Button(
-                onClick = {
-                    when {
-                        title.isBlank() -> errorMessage = "Title is required."
-                        location.isBlank() -> errorMessage = "Location is required."
-                        price.isBlank() -> errorMessage = "Price is required."
-                        else -> {
-                            coroutineScope.launch {
-                                isSubmitting = true
-                                errorMessage = null
-                                successMessage = null
-
-                                if (isEditMode) {
-                                    val updatedListing = listingToEdit!!.copy(
-                                        title = title.trim(),
-                                        description = description.trim(),
-                                        location = location.trim(),
-                                        locationLower = location.trim().lowercase(),
-                                        price = price.trim(),
-                                        bedrooms = bedrooms.trim().ifBlank { "N/A" },
-                                        propertyType = propertyType,
-                                        images = existingImages,
-                                    )
-                                    repository.updateListing(context, updatedListing, selectedImages)
-                                        .onSuccess {
-                                            successMessage = "Listing updated successfully!"
-                                            onListingPosted()
-                                        }
-                                        .onFailure {
-                                            errorMessage = it.message ?: "Failed to update listing."
-                                        }
-                                } else {
-                                    val listing = ToletListing(
-                                        userId = user.uid,
-                                        userName = user.displayName ?: "User",
-                                        title = title.trim(),
-                                        description = description.trim(),
-                                        location = location.trim(),
-                                        locationLower = location.trim().lowercase(),
-                                        price = price.trim(),
-                                        bedrooms = bedrooms.trim().ifBlank { "N/A" },
-                                        propertyType = propertyType,
-                                        createdAt = System.currentTimeMillis(),
-                                    )
-
-                                    repository.createListing(context, listing, selectedImages)
-                                        .onSuccess {
-                                            successMessage = "To-let posted successfully!"
-                                            title = ""
-                                            description = ""
-                                            location = ""
-                                            price = ""
-                                            bedrooms = ""
-                                            selectedImages = emptyList()
-                                            onListingPosted()
-                                        }
-                                        .onFailure {
-                                            errorMessage = it.message ?: "Failed to post listing."
-                                        }
-                                }
-
-                                isSubmitting = false
-                            }
-                        }
-                    }
-                },
+                onClick = { viewModel.submit(context, onListingPosted) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 16.dp),
             ) {
                 Text(
                     stringResource(
-                        if (isEditMode) R.string.save_listing_changes else R.string.post_listing,
+                        if (viewModel.isEditMode) R.string.save_listing_changes else R.string.post_listing,
                     ),
                 )
             }
         }
 
-        errorMessage?.let {
+        uiState.errorMessage?.let {
             Text(
                 text = it,
                 color = MaterialTheme.colorScheme.error,
@@ -369,7 +281,7 @@ fun AddToletScreen(
             )
         }
 
-        successMessage?.let {
+        uiState.successMessage?.let {
             Text(
                 text = it,
                 color = MaterialTheme.colorScheme.primary,
@@ -378,7 +290,7 @@ fun AddToletScreen(
         }
     }
 
-    if (isEditMode && onBack != null) {
+    if (viewModel.isEditMode && onBack != null) {
         Scaffold(
             modifier = modifier,
             topBar = {
@@ -406,6 +318,7 @@ fun AddToletScreen(
         Column(
             modifier = modifier
                 .fillMaxSize()
+                .statusBarsPadding()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
         ) {

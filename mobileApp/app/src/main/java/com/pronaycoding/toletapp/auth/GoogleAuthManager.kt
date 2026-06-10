@@ -7,7 +7,9 @@ import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialException
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.pronaycoding.toletapp.R
 import kotlinx.coroutines.tasks.await
@@ -18,6 +20,26 @@ class GoogleAuthManager(
     private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance(),
 ) {
     suspend fun signInWithGoogle(): Result<Unit> {
+        return getGoogleAuthCredential()
+            .mapCatching { credential ->
+                firebaseAuth.signInWithCredential(credential).await()
+            }
+            .map { }
+    }
+
+    suspend fun reauthenticateWithGoogle(user: FirebaseUser): Result<Unit> {
+        return getGoogleAuthCredential()
+            .mapCatching { credential ->
+                user.reauthenticate(credential).await()
+            }
+            .map { }
+    }
+
+    fun signOut() {
+        firebaseAuth.signOut()
+    }
+
+    private suspend fun getGoogleAuthCredential(): Result<AuthCredential> {
         val webClientId = resolveWebClientId()
         if (webClientId.isBlank() || webClientId == PLACEHOLDER_WEB_CLIENT_ID) {
             return Result.failure(
@@ -52,22 +74,17 @@ class GoogleAuthManager(
             }
 
             val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
-            val firebaseCredential = GoogleAuthProvider.getCredential(
-                googleIdTokenCredential.idToken,
-                null,
+            Result.success(
+                GoogleAuthProvider.getCredential(
+                    googleIdTokenCredential.idToken,
+                    null,
+                ),
             )
-
-            firebaseAuth.signInWithCredential(firebaseCredential).await()
-            Result.success(Unit)
         } catch (e: GetCredentialException) {
             Result.failure(e)
         } catch (e: Exception) {
             Result.failure(e)
         }
-    }
-
-    fun signOut() {
-        firebaseAuth.signOut()
     }
 
     private fun resolveWebClientId(): String {

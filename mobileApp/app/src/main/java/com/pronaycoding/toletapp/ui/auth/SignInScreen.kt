@@ -1,16 +1,20 @@
 package com.pronaycoding.toletapp.ui.auth
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -20,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -34,67 +39,66 @@ fun SignInScreen(
     onSignInClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    AuthScreenLayout(
-        modifier = modifier,
-        heroIcon = Icons.Outlined.Home,
-        title = stringResource(R.string.sign_in_title),
-        subtitle = stringResource(R.string.sign_in_subtitle),
+    val gradient = Brush.verticalGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.primary,
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.82f),
+            MaterialTheme.colorScheme.background,
+        ),
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(gradient),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            SignInFeatureRow(text = stringResource(R.string.sign_in_feature_search))
-            SignInFeatureRow(text = stringResource(R.string.sign_in_feature_post))
-            SignInFeatureRow(text = stringResource(R.string.sign_in_feature_chat))
-        }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(horizontal = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Spacer(modifier = Modifier.height(48.dp))
 
-        Spacer(modifier = Modifier.height(4.dp))
+            WelcomeIllustration()
 
-        if (isLoading) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                CircularProgressIndicator(modifier = Modifier.size(28.dp))
+            Spacer(modifier = Modifier.height(28.dp))
+
+            Text(
+                text = stringResource(R.string.sign_in_brand),
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimary,
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = stringResource(R.string.sign_in_tagline),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.82f),
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(32.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            } else {
+                GoogleSignInButton(onClick = onSignInClick)
             }
-        } else {
-            GoogleSignInButton(onClick = onSignInClick)
+
+            errorMessage?.let { message ->
+                Spacer(modifier = Modifier.height(12.dp))
+                AuthErrorBanner(message = message)
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
-
-        errorMessage?.let { message ->
-            AuthErrorBanner(message = message)
-        }
-
-        Text(
-            text = stringResource(R.string.sign_in_footer),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
-}
-
-@Composable
-private fun SignInFeatureRow(
-    text: String,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Surface(
-            modifier = Modifier.size(8.dp),
-            shape = RoundedCornerShape(4.dp),
-            color = MaterialTheme.colorScheme.primary,
-        ) {}
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
     }
 }
 
@@ -107,9 +111,9 @@ private fun GoogleSignInButton(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .height(52.dp),
-        shape = RoundedCornerShape(14.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            .height(54.dp),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
         colors = ButtonDefaults.outlinedButtonColors(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
@@ -123,7 +127,6 @@ private fun GoogleSignInButton(
                 text = stringResource(R.string.sign_in_with_google),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
             )
         }
     }
@@ -137,11 +140,7 @@ private fun GoogleMark() {
         color = Color.White,
         border = BorderStroke(0.5.dp, Color(0xFFDADCE0)),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        Box(contentAlignment = Alignment.Center) {
             Text(
                 text = "G",
                 fontSize = 13.sp,
