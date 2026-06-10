@@ -28,7 +28,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -52,7 +51,6 @@ fun PhoneNumberScreen(
     var isSaving by rememberSaveable { mutableStateOf(false) }
     var errorMessage by rememberSaveable { mutableStateOf<String?>(null) }
     val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
     val displayName = user.displayName?.takeIf { it.isNotBlank() }
     val invalidPhoneMessage = stringResource(R.string.phone_invalid)
     val saveFailedMessage = stringResource(R.string.phone_save_failed)
