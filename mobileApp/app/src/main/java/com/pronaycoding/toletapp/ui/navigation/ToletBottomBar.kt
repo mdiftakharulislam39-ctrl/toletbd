@@ -45,7 +45,8 @@ fun ToletBottomBar(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = 16.dp)
+            .padding(top = 24.dp, bottom = 10.dp),
     ) {
         Surface(
             modifier = Modifier
@@ -60,39 +61,37 @@ fun ToletBottomBar(
             tonalElevation = 2.dp,
             shadowElevation = 0.dp,
         ) {
-            Box(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    AppDestinations.bottomBarItems.forEach { destination ->
-                        if (destination.isCenterAction) {
-                            BottomBarFabSpacer()
-                        } else {
-                            BottomBarItem(
-                                label = destination.label,
-                                selected = currentDestination == destination,
-                                selectedIcon = destination.selectedIcon,
-                                unselectedIcon = destination.unselectedIcon,
-                                onClick = { onDestinationChange(destination) },
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                AppDestinations.bottomBarItems.forEach { destination ->
+                    if (destination.isCenterAction) {
+                        BottomBarFabSpacer()
+                    } else {
+                        BottomBarItem(
+                            label = destination.label,
+                            selected = currentDestination == destination,
+                            selectedIcon = destination.selectedIcon,
+                            unselectedIcon = destination.unselectedIcon,
+                            onClick = { onDestinationChange(destination) },
+                            modifier = Modifier.weight(1f),
+                        )
                     }
                 }
-
-                BottomBarFab(
-                    selected = currentDestination == AppDestinations.POST,
-                    onClick = { onDestinationChange(AppDestinations.POST) },
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .offset(y = (-14).dp),
-                )
             }
         }
+
+        BottomBarFab(
+            selected = currentDestination == AppDestinations.POST,
+            onClick = { onDestinationChange(AppDestinations.POST) },
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .offset(y = (-18).dp),
+        )
     }
 }
 
@@ -109,7 +108,7 @@ private fun BottomBarFab(
 ) {
     FloatingActionButton(
         onClick = onClick,
-        modifier = modifier.size(48.dp),
+        modifier = modifier.size(52.dp),
         shape = CircleShape,
         containerColor = if (selected) {
             MaterialTheme.colorScheme.primaryContainer
@@ -129,7 +128,7 @@ private fun BottomBarFab(
         Icon(
             imageVector = Icons.Filled.Add,
             contentDescription = AppDestinations.POST.label,
-            modifier = Modifier.size(22.dp),
+            modifier = Modifier.size(24.dp),
         )
     }
 }
